@@ -33,20 +33,26 @@ st.markdown(
 
 # Esconde o menu de três pontos, ícones do GitHub/Fork, rodapé e menu de usuário
 hide_streamlit_style = """
+    import streamlit as st
+
+# CSS personalizado
     <style>
-    /* Esconde o menu de três pontos e rodapé */
-    #MainMenu, footer {visibility: hidden;}
-    /* Esconde qualquer elemento fixo no canto superior direito */
-    [style*="position: fixed"][style*="right: 0px"][style*="top: 0px"] {display: none !important;}
-    /* Esconde qualquer elemento fixo no canto inferior direito */
-    [style*="position: fixed"][style*="right: 0px"][style*="bottom: 0px"] {display: none !important;}
-    /* Esconde qualquer botão ou div com z-index alto (ícones flutuantes) */
-    div[style*="z-index: 9999"] {display: none !important;}
-    /* Esconde qualquer botão ou div com classes suspeitas */
-    [class*="stToolbar"], [class*="stUserMenu"], [class*="st-emotion"], [class*="ActionButton"], [class*="floating"], [class*="profilePreview"], [class*="link_"], [class*="gzau3"] {display: none !important;}
+        /* Remove o menu do canto superior direito */
+        #MainMenu {visibility: hidden;}
+
+        /* Remove o rodapé ("Made with Streamlit") */
+        footer {visibility: hidden;}
+
+        /* Remove o botão de feedback */
+        .stActionButton {display: none;}
+
+        /* Remove elementos fixos no canto inferior direito (ex: barra de atualização ou outros ícones) */
+        .stDeployButton, .st-emotion-cache-1v0mbdj {display: none;}
     </style>
 """
+
 st.markdown(hide_streamlit_style, unsafe_allow_html=True)
+
 
 # Caminho da planilha de mapeamento
 PLANILHA_MAPEAMENTO = os.getenv('CAMINHO_PLANILHA', os.path.join(

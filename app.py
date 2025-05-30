@@ -42,6 +42,9 @@ custom_css = """
             display: none !important;
             z-index: none !important;
         }
+        div._profilePreview_gzau3_63 {
+            display: none !important;
+        }
     </style>
 """
 

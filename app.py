@@ -35,26 +35,14 @@ st.markdown(
 # CSS personalizado
 custom_style = """
     <style>
-        /* Aplica estilo para disfarçar ícones do menu superior */
-        #MainMenu {
+        /* Estiliza o toolbar do Streamlit com fundo branco e texto escuro */
+        div.stAppToolbar.st-emotion-cache-15ecox0.e14Ksaui2 {
             background-color: #fff !important;
             color: #222 !important;
         }
 
-        /* Aplica estilo ao rodapé (canto inferior direito) */
-        footer {
-            background-color: #fff !important;
-            color: #222 !important;
-        }
-
-        /* Estiliza possíveis botões flutuantes ou ícones do canto inferior direito */
-        .stDeployButton, .st-emotion-cache-1v0mbdj, .stActionButton {
-            background-color: #fff !important;
-            color: #222 !important;
-        }
-
-        /* Garante que ícones SVG fiquem com a cor alterada */
-        svg {
+        /* Garante que ícones dentro do toolbar também sejam afetados */
+        div.stAppToolbar.st-emotion-cache-15ecox0.e14Ksaui2 svg {
             fill: #222 !important;
             color: #222 !important;
             background-color: #fff !important;

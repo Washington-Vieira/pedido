@@ -294,50 +294,45 @@ class SheetsPedidosSync:
         """Atualiza o status de um pedido diretamente no Google Sheets."""
         try:
             if not self.client:
-                raise ValueError("Cliente do Google Sheets não configurado.")
+                return False, "Cliente do Google Sheets não configurado."
             if not self.SPREADSHEET_URL:
-                raise ValueError("URL da planilha não configurada.")
+                return False, "URL da planilha não configurada."
 
             sheet = self.client.open_by_url(self.SPREADSHEET_URL)
             ws_pedidos = sheet.worksheet("Pedidos")
 
-            # Encontrar a linha do pedido pelo Numero_Pedido
-            # Assumindo que 'Numero_Pedido' está na primeira coluna (índice 1)
-            cell = ws_pedidos.find(numero_pedido, in_column=1)
+            # Encontrar a linha do pedido pelo Numero_Pedido de forma mais robusta
+            # Lendo todos os valores da primeira coluna e encontrando o índice
+            # Assumindo que Numero_Pedido está na coluna A (índice 1)
+            numeros_pedidos_col = ws_pedidos.col_values(1)
 
-            if cell:
-                row_index = cell.row
-                # Encontrar índices das colunas (assumindo que cabeçalhos estão na linha 1)
-                headers = ws_pedidos.row_values(1)
-                try:
-                    status_col_index = headers.index("Status") + 1
-                    ultima_atualizacao_col_index = headers.index("Ultima_Atualizacao") + 1
-                    responsavel_col_index = headers.index("Responsavel_Atualizacao") + 1
-                except ValueError as e:
-                    return False, f"Colunas necessárias não encontradas na aba Pedidos: {e}"
+            try:
+                # Encontrar o índice (baseado em 0) na lista, pular o cabeçalho (linha 1)
+                # Adicionar 2 para obter o número da linha baseado em 1 (1 para o cabeçalho + 1 para converter de índice 0 para 1)
+                row_index = numeros_pedidos_col[1:].index(numero_pedido) + 2
+            except ValueError:
+                return False, f"Pedido {numero_pedido} não encontrado na coluna 'Numero_Pedido' da aba Pedidos."
 
-                # Preparar os dados para atualização pontual
-                # gspread precise de uma lista de listas para update_cells
-                data_to_update = [
-                    [novo_status],
-                    [ultima_atualizacao],
-                    [responsavel]
-                ]
+            # Encontrar índices das colunas (assumindo que cabeçalhos estão na linha 1)
+            headers = ws_pedidos.row_values(1)
+            try:
+                status_col_index = headers.index("Status") + 1 # Adicionar 1 para índice baseado em 1
+                ultima_atualizacao_col_index = headers.index("Ultima_Atualizacao") + 1 # Adicionar 1 para índice baseado em 1
+                responsavel_col_index = headers.index("Responsavel_Atualizacao") + 1 # Adicionar 1 para índice baseado em 1
+            except ValueError as e:
+                return False, f"Colunas necessárias não encontradas na aba Pedidos: {e}"
 
-                # Definir os ranges das células a serem atualizadas
-                # A sintaxe é R{row_index}C{col_index}
-                ranges_to_update = [
-                    f"R{row_index}C{status_col_index}",
-                    f"R{row_index}C{ultima_atualizacao_col_index}",
-                    f"R{row_index}C{responsavel_col_index}"
-                ]
+            # Atualizar as células individualmente usando update_cell
+            # Isso é mais simples para um pequeno número de células do que batch_update com ranges não contíguos
+            ws_pedidos.update_cell(row_index, status_col_index, novo_status)
+            ws_pedidos.update_cell(row_index, ultima_atualizacao_col_index, ultima_atualizacao)
+            ws_pedidos.update_cell(row_index, responsavel_col_index, responsavel)
 
-                # Atualizar as células
-                ws_pedidos.batch_update(ranges_to_update, data_to_update)
+            return True, "Status atualizado com sucesso no Google Sheets!"
 
-                return True, "Status atualizado com sucesso no Google Sheets!"
-            else:
-                return False, f"Pedido {numero_pedido} não encontrado na aba Pedidos."
-
+        except gspread.exceptions.APIError as api_error:
+            # Capturar erros específicos da API do Google Sheets
+            return False, f"Erro da API do Google Sheets ao atualizar status: {api_error}"
         except Exception as e:
-            return False, f"Erro ao atualizar status no Google Sheets: {str(e)}"
+            # Capturar quaisquer outros erros durante o processo de atualização
+            return False, f"Erro inesperado ao atualizar status no Google Sheets: {str(e)}"

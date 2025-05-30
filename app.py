@@ -40,6 +40,7 @@ custom_css = """
         /* Remove completamente o cabeçalho da aplicação Streamlit */
         header.stAppHeader {
             display: none !important;
+            z-index: none !important;
         }
     </style>
 """

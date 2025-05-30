@@ -33,16 +33,18 @@ st.markdown(
 
 
 # CSS personalizado
-custom_style = """
+
+# CSS para remover completamente o cabeçalho do Streamlit
+custom_css = """
     <style>
-        /* Remove completamente a toolbar do canto superior */
-        div.stAppToolbar.st-emotion-cache-15ecox0.e14Ksaui2 {
+        /* Remove completamente o cabeçalho da aplicação Streamlit */
+        header.stAppHeader {
             display: none !important;
         }
     </style>
 """
 
-st.markdown(custom_style, unsafe_allow_html=True)
+st.markdown(custom_css, unsafe_allow_html=True)
 
 
 

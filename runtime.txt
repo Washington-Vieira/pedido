@@ -1,0 +1,3 @@
+setuptools>=69.0.3
+wheel>=0.42.0streamlit>=1.31.1pandas>=2.2.0numpy>=1.26.3openpyxl>=3.1.2python-dotenv>=1.0.0fpdf2>=2.7.8
+PYTHON_VERSION=3.13.1

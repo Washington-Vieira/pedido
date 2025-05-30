@@ -42,8 +42,9 @@ custom_css = """
             display: none !important;
             z-index: none !important;
         }
-        div._link_gzau3_10 {
+        a._container_gzau3_1 {
             display: none;
+            z-index: none;
         }
     </style>
 """

@@ -289,3 +289,55 @@ class SheetsPedidosSync:
             }
         except Exception as e:
             raise Exception(f"Erro ao buscar detalhes do pedido no Google Sheets: {str(e)}")
+
+    def atualizar_status_pedido_sheets(self, numero_pedido: str, novo_status: str, ultima_atualizacao: str, responsavel: str) -> tuple[bool, str]:
+        """Atualiza o status de um pedido diretamente no Google Sheets."""
+        try:
+            if not self.client:
+                raise ValueError("Cliente do Google Sheets não configurado.")
+            if not self.SPREADSHEET_URL:
+                raise ValueError("URL da planilha não configurada.")
+
+            sheet = self.client.open_by_url(self.SPREADSHEET_URL)
+            ws_pedidos = sheet.worksheet("Pedidos")
+
+            # Encontrar a linha do pedido pelo Numero_Pedido
+            # Assumindo que 'Numero_Pedido' está na primeira coluna (índice 1)
+            cell = ws_pedidos.find(numero_pedido, in_column=1)
+
+            if cell:
+                row_index = cell.row
+                # Encontrar índices das colunas (assumindo que cabeçalhos estão na linha 1)
+                headers = ws_pedidos.row_values(1)
+                try:
+                    status_col_index = headers.index("Status") + 1
+                    ultima_atualizacao_col_index = headers.index("Ultima_Atualizacao") + 1
+                    responsavel_col_index = headers.index("Responsavel_Atualizacao") + 1
+                except ValueError as e:
+                    return False, f"Colunas necessárias não encontradas na aba Pedidos: {e}"
+
+                # Preparar os dados para atualização pontual
+                # gspread precise de uma lista de listas para update_cells
+                data_to_update = [
+                    [novo_status],
+                    [ultima_atualizacao],
+                    [responsavel]
+                ]
+
+                # Definir os ranges das células a serem atualizadas
+                # A sintaxe é R{row_index}C{col_index}
+                ranges_to_update = [
+                    f"R{row_index}C{status_col_index}",
+                    f"R{row_index}C{ultima_atualizacao_col_index}",
+                    f"R{row_index}C{responsavel_col_index}"
+                ]
+
+                # Atualizar as células
+                ws_pedidos.batch_update(ranges_to_update, data_to_update)
+
+                return True, "Status atualizado com sucesso no Google Sheets!"
+            else:
+                return False, f"Pedido {numero_pedido} não encontrado na aba Pedidos."
+
+        except Exception as e:
+            return False, f"Erro ao atualizar status no Google Sheets: {str(e)}"

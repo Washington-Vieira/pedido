@@ -246,30 +246,42 @@ class PedidoController:
             raise Exception(f"Erro ao buscar detalhes do pedido: {str(e)}")
 
     def atualizar_status_pedido(self, numero_pedido: str, novo_status: str, responsavel: str):
-        """Atualiza o status de um pedido, sincronizando a alteração pontual com Google Sheets."""
+        """Atualiza o status de um pedido localmente e tenta sincronizar com Google Sheets (método anterior)."""
         try:
-            # A atualização do DataFrame local é tratada na View.
-            # Focar apenas na sincronização pontual com Google Sheets aqui.
+            # Carregar dados existentes do Sheets (pode causar erro de cota se chamado frequentemente)
+            df_pedidos = self._ler_pedidos()
+            df_itens = self._ler_itens()
 
-            # Sincronizar a alteração pontual com Google Sheets
-            ultima_atualizacao_str = datetime.now().strftime('%d/%m/%Y %H:%M')
-            success_sheets, message_sheets = self.sheets_sync.atualizar_status_pedido_sheets(
-                numero_pedido,
-                novo_status,
-                ultima_atualizacao_str,
-                responsavel
-            )
+            # Encontrar o índice do pedido no DataFrame
+            idx = df_pedidos[df_pedidos['Numero_Pedido'] == numero_pedido].index[0]
 
+            # Atualizar status no DataFrame
+            df_pedidos.loc[idx, 'Status'] = novo_status
+            df_pedidos.loc[idx, 'Ultima_Atualizacao'] = datetime.now().strftime('%d/%m/%Y %H:%M')
+            df_pedidos.loc[idx, 'Responsavel_Atualizacao'] = responsavel
+
+            # Fazer backup antes de salvar localmente
+            self._fazer_backup()
+
+            # Salvar localmente (mantido como fallback)
+            with pd.ExcelWriter(self.arquivo_pedidos, engine='openpyxl') as writer:
+                df_pedidos.to_excel(writer, sheet_name='Pedidos', index=False)
+                df_itens.to_excel(writer, sheet_name='Itens', index=False)
+
+            # Sincronizar TUDO com Google Sheets (pode causar erro de cota e não atualizar se _ler_pedidos falhou)
+            # Nota: Esta operação reescreve as abas completas no Sheets.
+            success_sheets, message_sheets = self.sheets_sync.salvar_pedido_completo(df_pedidos, df_itens)
+            
             if not success_sheets:
-                # Não levantar exceção aqui, apenas retornar o status e mensagem do Sheets
-                return False, f"Aviso ao sincronizar status com Google Sheets: {message_sheets}"
-            else:
-                return True, "Status atualizado com sucesso no Google Sheets!"
+                 # Reportar o erro do Sheets, mas a atualização local deve ter ocorrido
+                 st.warning(f"Aviso ao sincronizar status com Google Sheets: {message_sheets}")
 
+        except IndexError:
+             # Tratar caso o pedido não seja encontrado após ler os dados
+             raise Exception(f"Erro ao atualizar status: Pedido {numero_pedido} não encontrado nos dados carregados.")
         except Exception as e:
-            # Captura exceções gerais durante a sincronização com Sheets
-            # Não levantar exceção aqui, apenas retornar False e a mensagem de erro
-            return False, f"Erro inesperado ao sincronizar status com Google Sheets: {str(e)}"
+            # Capturar quaisquer outros erros durante o processo
+            raise Exception(f"Erro geral ao atualizar status do pedido: {str(e)}")
 
     @staticmethod
     @st.cache_data

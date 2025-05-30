@@ -36,10 +36,14 @@ hide_streamlit_style = """
     <style>
     /* Esconde o menu de três pontos */
     #MainMenu {visibility: hidden;}
-    /* Esconde o ícone do GitHub e Fork */
-    header [data-testid="stHeader"] div:nth-child(2) {display: none;}
     /* Esconde o rodapé "Made with Streamlit" */
     footer {visibility: hidden;}
+    /* Esconde o bloco de ícones do header (GitHub, Fork, etc) */
+    [data-testid="stToolbar"] {display: none !important;}
+    /* Esconde qualquer svg de GitHub ou Fork no header */
+    header svg {display: none !important;}
+    /* Esconde o texto Fork */
+    header [data-testid="stHeader"] span, header [data-testid="stHeader"] a {display: none !important;}
     </style>
 """
 st.markdown(hide_streamlit_style, unsafe_allow_html=True)

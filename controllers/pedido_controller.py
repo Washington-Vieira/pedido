@@ -111,9 +111,8 @@ class PedidoController:
     def _ler_pedidos(self) -> pd.DataFrame:
         """Lê a aba 'Pedidos' do Google Sheets"""
         try:
-            sheets_sync = SheetsPedidosSync()
-            if sheets_sync.client and sheets_sync.SPREADSHEET_URL:
-                sheet = sheets_sync.client.open_by_url(sheets_sync.SPREADSHEET_URL)
+            if self.sheets_sync.client and self.sheets_sync.SPREADSHEET_URL:
+                sheet = self.sheets_sync.client.open_by_url(self.sheets_sync.SPREADSHEET_URL)
                 worksheet = sheet.worksheet("Pedidos")
                 data = worksheet.get_all_records()
                 df = pd.DataFrame(data)
@@ -124,22 +123,21 @@ class PedidoController:
                     df['Responsavel_Atualizacao'] = ""
                 return df
             else:
-                raise Exception("Não foi possível conectar ao Google Sheets para ler pedidos.")
+                raise Exception("Cliente do Google Sheets não inicializado corretamente. Verifique as credenciais e a URL.")
         except Exception as e:
             raise Exception(f"Erro ao ler pedidos do Google Sheets: {str(e)}")
 
     def _ler_itens(self) -> pd.DataFrame:
         """Lê a aba 'Itens' do Google Sheets"""
         try:
-            sheets_sync = SheetsPedidosSync()
-            if sheets_sync.client and sheets_sync.SPREADSHEET_URL:
-                sheet = sheets_sync.client.open_by_url(sheets_sync.SPREADSHEET_URL)
+            if self.sheets_sync.client and self.sheets_sync.SPREADSHEET_URL:
+                sheet = self.sheets_sync.client.open_by_url(self.sheets_sync.SPREADSHEET_URL)
                 worksheet = sheet.worksheet("Itens")
                 data = worksheet.get_all_records()
                 df = pd.DataFrame(data)
                 return df
             else:
-                raise Exception("Não foi possível conectar ao Google Sheets para ler itens.")
+                raise Exception("Cliente do Google Sheets não inicializado corretamente. Verifique as credenciais e a URL.")
         except Exception as e:
             raise Exception(f"Erro ao ler itens do Google Sheets: {str(e)}")
 

@@ -245,35 +245,11 @@ class PedidoController:
         except Exception as e:
             raise Exception(f"Erro ao buscar detalhes do pedido: {str(e)}")
 
-    def atualizar_status_pedido(self, numero_pedido: str, novo_status: str, responsavel: str) -> pd.DataFrame:
-        """Atualiza o status de um pedido localmente e sincroniza a alteração pontual com Google Sheets. Retorna o DataFrame de pedidos atualizado."""
+    def atualizar_status_pedido(self, numero_pedido: str, novo_status: str, responsavel: str):
+        """Atualiza o status de um pedido, sincronizando a alteração pontual com Google Sheets."""
         try:
-            # Carregar dados existentes (ainda precisamos ler para atualizar localmente)
-            df_pedidos = self._ler_pedidos()
-            df_itens = self._ler_itens()
-
-            # Encontrar o índice do pedido no DataFrame local
-            idx_local = df_pedidos[df_pedidos['Numero_Pedido'] == numero_pedido].index
-
-            if idx_local.empty:
-                 st.warning(f"Pedido {numero_pedido} não encontrado no arquivo local para atualização. Tentando atualizar apenas no Sheets.")
-                 # Prosseguir apenas com a atualização no Sheets
-                 df_atualizado_localmente = df_pedidos.copy() # Usar uma cópia para não afetar o df original que pode estar em cache
-            else:
-                # Atualizar status no DataFrame local
-                idx = idx_local[0]
-                df_pedidos.loc[idx, 'Status'] = novo_status
-                df_pedidos.loc[idx, 'Ultima_Atualizacao'] = datetime.now().strftime('%d/%m/%Y %H:%M')
-                df_pedidos.loc[idx, 'Responsavel_Atualizacao'] = responsavel
-                df_atualizado_localmente = df_pedidos # df_pedidos já foi modificado no local
-
-                # Fazer backup antes de salvar localmente
-                # self._fazer_backup() # Desabilitado temporariamente para focar no Sheets
-
-                # Salvar localmente # Desabilitado temporariamente para focar no Sheets
-                # with pd.ExcelWriter(self.arquivo_pedidos, engine='openpyxl') as writer:
-                #     df_pedidos.to_excel(writer, sheet_name='Pedidos', index=False)
-                #     df_itens.to_excel(writer, sheet_name='Itens', index=False)
+            # A atualização do DataFrame local é tratada na View.
+            # Focar apenas na sincronização pontual com Google Sheets aqui.
 
             # Sincronizar a alteração pontual com Google Sheets
             ultima_atualizacao_str = datetime.now().strftime('%d/%m/%Y %H:%M')
@@ -285,14 +261,15 @@ class PedidoController:
             )
 
             if not success_sheets:
-                st.warning(f"Aviso ao sincronizar status com Google Sheets: {message_sheets}")
-
-            # Retornar o DataFrame atualizado (seja pela modificação local ou o original se não encontrado localmente)
-            return df_atualizado_localmente
+                # Não levantar exceção aqui, apenas retornar o status e mensagem do Sheets
+                return False, f"Aviso ao sincronizar status com Google Sheets: {message_sheets}"
+            else:
+                return True, "Status atualizado com sucesso no Google Sheets!"
 
         except Exception as e:
-            # Captura exceções gerais e relata
-            raise Exception(f"Erro geral ao atualizar status do pedido: {str(e)}")
+            # Captura exceções gerais durante a sincronização com Sheets
+            # Não levantar exceção aqui, apenas retornar False e a mensagem de erro
+            return False, f"Erro inesperado ao sincronizar status com Google Sheets: {str(e)}"
 
     @staticmethod
     @st.cache_data

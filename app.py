@@ -42,9 +42,6 @@ custom_css = """
             display: none !important;
             z-index: none !important;
         }
-        footer {
-            visibility: hidden;
-        }
     </style>
 """
 

@@ -359,6 +359,7 @@ Quantidade: {item['quantidade']}
                     file_name=os.path.basename(caminho_pdf),
                     mime="application/pdf"
                 )
-            
+            else:
+                st.error("Erro ao gerar PDF: arquivo não encontrado.")
         except Exception as e:
-            raise Exception(f"Erro ao processar pedido: {str(e)}") 
+            st.error(f"Erro ao processar impressão: {str(e)}") 

@@ -42,9 +42,8 @@ custom_css = """
             display: none !important;
             z-index: none !important;
         }
-        a._container_gzau3_1 {
-            display: none;
-            z-index: none;
+        footer {
+            visibility: hidden;
         }
     </style>
 """

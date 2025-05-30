@@ -246,3 +246,46 @@ class SheetsPedidosSync:
         else:
             st.error("❌ Não conectado ao Google Sheets")
             st.info("Configure as credenciais nas configurações para conectar.")
+
+    def get_pedido_detalhes(self, numero_pedido: str) -> dict:
+        """Busca os detalhes de um pedido pelo número diretamente do Google Sheets."""
+        try:
+            if not self.client:
+                raise ValueError("Cliente do Google Sheets não configurado. Verifique as credenciais.")
+            if not self.SPREADSHEET_URL:
+                raise ValueError("URL da planilha não configurada.")
+            
+            sheet = self.client.open_by_url(self.SPREADSHEET_URL)
+            ws_pedidos = sheet.worksheet("Pedidos")
+            ws_itens = sheet.worksheet("Itens")
+            
+            # Buscar pedido na aba Pedidos
+            pedidos_data = ws_pedidos.get_all_records()
+            pedido = next((p for p in pedidos_data if p.get("Numero_Pedido") == numero_pedido), None)
+            if not pedido:
+                raise ValueError(f"Pedido {numero_pedido} não encontrado.")
+            
+            # Buscar itens na aba Itens
+            itens_data = ws_itens.get_all_records()
+            itens = [item for item in itens_data if item.get("Numero_Pedido") == numero_pedido]
+            
+            # Converter pedido para dicionário
+            info_dict = {
+                "Numero_Pedido": pedido.get("Numero_Pedido", ""),
+                "Data": pedido.get("Data", ""),
+                "Cliente": pedido.get("Cliente", ""),
+                "RACK": pedido.get("RACK", ""),
+                "Localizacao": pedido.get("Localizacao", ""),
+                "Solicitante": pedido.get("Solicitante", ""),
+                "Observacoes": pedido.get("Observacoes", ""),
+                "Ultima_Atualizacao": pedido.get("Ultima_Atualizacao", ""),
+                "Responsavel_Atualizacao": pedido.get("Responsavel_Atualizacao", "")
+            }
+            
+            return {
+                "info": info_dict,
+                "itens": itens,
+                "status": pedido.get("Status", "")
+            }
+        except Exception as e:
+            raise Exception(f"Erro ao buscar detalhes do pedido no Google Sheets: {str(e)}")

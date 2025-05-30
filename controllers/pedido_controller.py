@@ -238,17 +238,22 @@ class PedidoController:
             raise Exception(f"Erro ao buscar pedidos: {str(e)}")
 
     def get_pedido_detalhes(self, numero_pedido: str) -> dict:
-        """Retorna os detalhes completos de um pedido"""
+        """Retorna os detalhes completos de um pedido, buscando do Google Sheets se disponível, ou do arquivo local como fallback."""
         try:
-            # Carregar dados
+            # Tenta buscar do Google Sheets
+            if hasattr(self, 'sheets_sync') and self.sheets_sync.client:
+                try:
+                    return self.sheets_sync.get_pedido_detalhes(numero_pedido)
+                except Exception as e:
+                    st.warning(f"Aviso: Erro ao buscar do Google Sheets: {str(e)}. Tentando arquivo local...")
+            
+            # Fallback: buscar do arquivo local
             df_pedidos = pd.read_excel(self.arquivo_pedidos, sheet_name='Pedidos')
             df_itens = pd.read_excel(self.arquivo_pedidos, sheet_name='Itens')
             
-            # Buscar informações do pedido
             pedido = df_pedidos[df_pedidos["Numero_Pedido"] == numero_pedido].iloc[0]
             itens = df_itens[df_itens["Numero_Pedido"] == numero_pedido].to_dict('records')
             
-            # Converter o pedido para dicionário
             info_dict = {
                 "Numero_Pedido": pedido["Numero_Pedido"],
                 "Data": pedido["Data"],
@@ -266,7 +271,6 @@ class PedidoController:
                 "itens": itens,
                 "status": pedido["Status"]
             }
-            
         except Exception as e:
             raise Exception(f"Erro ao buscar detalhes do pedido: {str(e)}")
 

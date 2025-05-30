@@ -7,6 +7,7 @@ import tempfile
 import time
 from fpdf import FPDF
 from utils.print_manager import PrintManager
+import shutil
 
 class PedidoHistoricoView:
     def __init__(self, controller: PedidoController):
@@ -316,38 +317,39 @@ Quantidade: {item['quantidade']}
         return texto
 
     def _criar_pdf(self, texto: str) -> str:
-        """Cria um arquivo PDF com o conteúdo do pedido"""
+        """Cria um arquivo PDF com o conteúdo do pedido em um diretório temporário."""
         pdf = FPDF()
         pdf.add_page()
-        
+
         # Usar fonte padrão
         pdf.set_font('Helvetica', size=11)
-        
+
         # Adicionar texto
         for linha in texto.split('\n'):
             pdf.cell(0, 5, txt=linha, ln=True)
-        
-        # Salvar PDF
+
+        # Salvar PDF em um diretório temporário acessível
         nome_arquivo = f"pedido_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
         
-        # No Streamlit Cloud, salvar na pasta temporária
-        if os.getenv('IS_STREAMLIT_CLOUD', '0') == '1':
-            caminho_pdf = os.path.join('/tmp', nome_arquivo)
-        else:
-            caminho_pdf = os.path.join(os.path.expanduser("~"), "Downloads", nome_arquivo)
+        # Usar tempfile para criar um diretório temporário seguro
+        temp_dir = tempfile.mkdtemp()
+        caminho_pdf = os.path.join(temp_dir, nome_arquivo)
             
         pdf.output(caminho_pdf)
-        return caminho_pdf
+        
+        # Retornar o caminho para o arquivo temporário e o diretório temporário para limpeza posterior
+        return caminho_pdf, temp_dir
 
     def imprimir_pedido(self, numero_pedido: str):
-        """Gera um PDF do pedido"""
+        """Gera um PDF do pedido e oferece para download."""
+        temp_dir = None # Inicializa temp_dir fora do try
         try:
             # Obter dados do pedido
             pedido = self.controller.get_pedido_detalhes(numero_pedido)
             texto = self.formatar_pedido_para_impressao(pedido)
             
-            # Gerar PDF
-            caminho_pdf = self._criar_pdf(texto)
+            # Gerar PDF e obter o caminho do arquivo e do diretório temporário
+            caminho_pdf, temp_dir = self._criar_pdf(texto)
             
             # Mostrar link para download
             if os.path.exists(caminho_pdf):
@@ -359,7 +361,17 @@ Quantidade: {item['quantidade']}
                     file_name=os.path.basename(caminho_pdf),
                     mime="application/pdf"
                 )
+                # Exibir mensagem de sucesso apenas se o PDF foi gerado
+                st.success("PDF do pedido gerado com sucesso! Clique no botão acima para baixar.")
             else:
                 st.error("Erro ao gerar PDF: arquivo não encontrado.")
+                
         except Exception as e:
-            st.error(f"Erro ao processar impressão: {str(e)}") 
+            st.error(f"Erro ao processar impressão: {str(e)}")
+        finally:
+            # Limpar o diretório temporário se ele foi criado
+            if temp_dir and os.path.exists(temp_dir):
+                try:
+                    shutil.rmtree(temp_dir)
+                except Exception as cleanup_error:
+                    st.warning(f"Aviso: Não foi possível limpar o diretório temporário {temp_dir}. Erro: {cleanup_error}") 

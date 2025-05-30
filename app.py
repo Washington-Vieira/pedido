@@ -31,6 +31,19 @@ st.markdown(
     unsafe_allow_html=True
 )
 
+# Esconde o menu de três pontos, o ícone do GitHub e Fork, e o rodapé "Made with Streamlit"
+hide_streamlit_style = """
+    <style>
+    /* Esconde o menu de três pontos */
+    #MainMenu {visibility: hidden;}
+    /* Esconde o ícone do GitHub e Fork */
+    header [data-testid="stHeader"] div:nth-child(2) {display: none;}
+    /* Esconde o rodapé "Made with Streamlit" */
+    footer {visibility: hidden;}
+    </style>
+"""
+st.markdown(hide_streamlit_style, unsafe_allow_html=True)
+
 # Caminho da planilha de mapeamento
 PLANILHA_MAPEAMENTO = os.getenv('CAMINHO_PLANILHA', os.path.join(
     'pedidos',

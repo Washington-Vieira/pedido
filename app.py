@@ -34,23 +34,16 @@ st.markdown(
 # Esconde o menu de três pontos, ícones do GitHub/Fork, rodapé e menu de usuário
 hide_streamlit_style = """
     <style>
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
-    [data-testid="stToolbar"] {display: none !important;}
-    header svg, header [data-testid="stHeader"] span, header [data-testid="stHeader"] a, header [data-testid="stHeader"] div {display: none !important;}
-    [aria-label="Fork"], [aria-label="View source on GitHub"] {display: none !important;}
-    [data-testid="stUserMenu"] {display: none !important;}
-    button.st-emotion-cache-usvq0g.eacrzsi17 {display: none !important;}
-    div.stToolbarActionButton {display: none !important;}
-    div._link_gzau3_10 {display: none !important;}
-    div._profilePreview_gzau3_63 {display: none !important;}
-    /* Remove todos os botões fixos no canto inferior direito */
-    div[class*="floating"] {display: none !important;}
-    div[class*="stActionButton"] {display: none !important;}
-    /* Remove qualquer botão ou div fixado no canto inferior direito */
-    [style*="position: fixed"][style*="right: 0px"][style*="bottom: 0px"] {display: none !important;}
-    /* Remove qualquer botão ou div fixado no canto superior direito */
+    /* Esconde o menu de três pontos e rodapé */
+    #MainMenu, footer {visibility: hidden;}
+    /* Esconde qualquer elemento fixo no canto superior direito */
     [style*="position: fixed"][style*="right: 0px"][style*="top: 0px"] {display: none !important;}
+    /* Esconde qualquer elemento fixo no canto inferior direito */
+    [style*="position: fixed"][style*="right: 0px"][style*="bottom: 0px"] {display: none !important;}
+    /* Esconde qualquer botão ou div com z-index alto (ícones flutuantes) */
+    div[style*="z-index: 9999"] {display: none !important;}
+    /* Esconde qualquer botão ou div com classes suspeitas */
+    [class*="stToolbar"], [class*="stUserMenu"], [class*="st-emotion"], [class*="ActionButton"], [class*="floating"], [class*="profilePreview"], [class*="link_"], [class*="gzau3"] {display: none !important;}
     </style>
 """
 st.markdown(hide_streamlit_style, unsafe_allow_html=True)

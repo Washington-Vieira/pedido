@@ -43,6 +43,11 @@ hide_streamlit_style = """
     header [data-testid="stHeader"] div {display: none !important;}
     [aria-label="Fork"], [aria-label="View source on GitHub"] {display: none !important;}
     [data-testid="stUserMenu"] {display: none !important;}
+    /* Esconde botões e divs customizados informados pelo usuário */
+    button.st-emotion-cache-usvq0g.eacrzsi17 {display: none !important;}
+    div.stToolbarActionButton {display: none !important;}
+    div._link_gzau3_10 {display: none !important;}
+    div._profilePreview_gzau3_63 {display: none !important;}
     </style>
 """
 st.markdown(hide_streamlit_style, unsafe_allow_html=True)

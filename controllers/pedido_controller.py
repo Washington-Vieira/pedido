@@ -238,39 +238,12 @@ class PedidoController:
             raise Exception(f"Erro ao buscar pedidos: {str(e)}")
 
     def get_pedido_detalhes(self, numero_pedido: str) -> dict:
-        """Retorna os detalhes completos de um pedido, buscando do Google Sheets se disponível, ou do arquivo local como fallback."""
+        """Retorna os detalhes completos de um pedido, consultando apenas o Google Sheets."""
         try:
-            # Tenta buscar do Google Sheets
-            if hasattr(self, 'sheets_sync') and self.sheets_sync.client:
-                try:
-                    return self.sheets_sync.get_pedido_detalhes(numero_pedido)
-                except Exception as e:
-                    st.warning(f"Aviso: Erro ao buscar do Google Sheets: {str(e)}. Tentando arquivo local...")
+            if not hasattr(self, 'sheets_sync') or not self.sheets_sync.client:
+                raise ValueError("Cliente do Google Sheets não configurado. Verifique as credenciais.")
             
-            # Fallback: buscar do arquivo local
-            df_pedidos = pd.read_excel(self.arquivo_pedidos, sheet_name='Pedidos')
-            df_itens = pd.read_excel(self.arquivo_pedidos, sheet_name='Itens')
-            
-            pedido = df_pedidos[df_pedidos["Numero_Pedido"] == numero_pedido].iloc[0]
-            itens = df_itens[df_itens["Numero_Pedido"] == numero_pedido].to_dict('records')
-            
-            info_dict = {
-                "Numero_Pedido": pedido["Numero_Pedido"],
-                "Data": pedido["Data"],
-                "Cliente": pedido["Cliente"],
-                "RACK": pedido["RACK"],
-                "Localizacao": pedido["Localizacao"],
-                "Solicitante": pedido["Solicitante"],
-                "Observacoes": pedido["Observacoes"],
-                "Ultima_Atualizacao": pedido["Ultima_Atualizacao"] if pd.notna(pedido["Ultima_Atualizacao"]) else "",
-                "Responsavel_Atualizacao": pedido["Responsavel_Atualizacao"] if pd.notna(pedido["Responsavel_Atualizacao"]) else ""
-            }
-            
-            return {
-                "info": info_dict,
-                "itens": itens,
-                "status": pedido["Status"]
-            }
+            return self.sheets_sync.get_pedido_detalhes(numero_pedido)
         except Exception as e:
             raise Exception(f"Erro ao buscar detalhes do pedido: {str(e)}")
 

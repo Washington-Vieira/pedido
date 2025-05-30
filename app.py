@@ -35,17 +35,9 @@ st.markdown(
 # CSS personalizado
 custom_style = """
     <style>
-        /* Estiliza o toolbar do Streamlit com fundo branco e texto escuro */
+        /* Remove completamente a toolbar do canto superior */
         div.stAppToolbar.st-emotion-cache-15ecox0.e14Ksaui2 {
-            background-color: #fff !important;
-            color: #222 !important;
-        }
-
-        /* Garante que ícones dentro do toolbar também sejam afetados */
-        div.stAppToolbar.st-emotion-cache-15ecox0.e14Ksaui2 svg {
-            fill: #222 !important;
-            color: #222 !important;
-            background-color: #fff !important;
+            display: none !important;
         }
     </style>
 """

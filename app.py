@@ -31,27 +31,39 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-# Esconde o menu de três pontos, ícones do GitHub/Fork, rodapé e menu de usuário
-hide_streamlit_style = """
-    import streamlit as st
 
 # CSS personalizado
+custom_style = """
     <style>
-        /* Remove o menu do canto superior direito */
-        #MainMenu {visibility: hidden;}
+        /* Aplica estilo para disfarçar ícones do menu superior */
+        #MainMenu {
+            background-color: #fff !important;
+            color: #222 !important;
+        }
 
-        /* Remove o rodapé ("Made with Streamlit") */
-        footer {visibility: hidden;}
+        /* Aplica estilo ao rodapé (canto inferior direito) */
+        footer {
+            background-color: #fff !important;
+            color: #222 !important;
+        }
 
-        /* Remove o botão de feedback */
-        .stActionButton {display: none;}
+        /* Estiliza possíveis botões flutuantes ou ícones do canto inferior direito */
+        .stDeployButton, .st-emotion-cache-1v0mbdj, .stActionButton {
+            background-color: #fff !important;
+            color: #222 !important;
+        }
 
-        /* Remove elementos fixos no canto inferior direito (ex: barra de atualização ou outros ícones) */
-        .stDeployButton, .st-emotion-cache-1v0mbdj {display: none;}
+        /* Garante que ícones SVG fiquem com a cor alterada */
+        svg {
+            fill: #222 !important;
+            color: #222 !important;
+            background-color: #fff !important;
+        }
     </style>
 """
 
-st.markdown(hide_streamlit_style, unsafe_allow_html=True)
+st.markdown(custom_style, unsafe_allow_html=True)
+
 
 
 # Caminho da planilha de mapeamento

@@ -238,20 +238,22 @@ class PedidoHistoricoView:
                                 st.warning("ℹ️ O status selecionado é igual ao atual.")
                             else:
                                 try:
-                                    # Atualizar status
-                                    self.controller.atualizar_status_pedido(
+                                    # Atualizar status e capturar o DataFrame atualizado
+                                    # A atualização do Sheets já acontece dentro do controller
+                                    df_pedidos_atualizado = self.controller.atualizar_status_pedido(
                                         pedido_selecionado,
                                         novo_status,
                                         responsavel
                                     )
-                                    
+
+                                    # Atualizar o DataFrame localmente para re-renderizar a tabela
+                                    # Não precisamos de st.rerun() aqui, pois a interface será atualizada
+                                    # na próxima execução natural do script pelo Streamlit.
+                                    st.session_state['df_pedidos_historico'] = df_pedidos_atualizado
+
                                     # Mostrar mensagem de sucesso
                                     st.success(f"✅ Status atualizado com sucesso para {novo_status}!")
-                                    
-                                    # Recarregar dados após um breve delay
-                                    time.sleep(0.5)
-                                    st.rerun()
-                                    
+
                                 except Exception as e:
                                     st.error(f"❌ Erro ao atualizar status: {str(e)}")
 

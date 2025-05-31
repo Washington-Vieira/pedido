@@ -204,41 +204,65 @@ class PedidoHistoricoView:
                                 st.error(f"Erro ao imprimir pedido: {str(e)}")
                     
                     with col2:
-                        st.markdown("#### Atualizar Status")
+                        st.markdown("#### Itens do Pedido")
+                        if detalhes['itens']:
+                            for idx, item in enumerate(detalhes['itens'], 1):
+                                st.write(f"**Item {idx}**")
+                                st.write(f"**CÓD Yazaki:** {item['cod_yazaki']}")
+                                st.write(f"**Código Cabo:** {item['codigo_cabo']}")
+                                st.write(f"**Seção:** {item['seccao']}")
+                                st.write(f"**Cor:** {item['cor']}")
+                                st.write(f"**Quantidade:** {item['quantidade']}")
+                                if idx < len(detalhes['itens']):
+                                    st.markdown("---")
+                        else:
+                            st.info("Nenhum item encontrado para este pedido.")
+
+                    # Atualização de Status em uma nova linha
+                    st.markdown("---")
+                    st.markdown("#### Atualizar Status")
+                    
+                    # Dividir em duas colunas para status e nome
+                    col_status, col_nome = st.columns(2)
+                    
+                    with col_status:
                         novo_status = st.selectbox(
                             "Novo Status",
                             ["Pendente", "Em Processamento", "Concluído"],
                             index=["Pendente", "Em Processamento", "Concluído"].index(detalhes['status']) if detalhes['status'] in ["Pendente", "Em Processamento", "Concluído"] else 0
                         )
-                        
-                        if st.button("Atualizar Status"):
-                            try:
-                                self.controller.atualizar_status_pedido(
-                                    pedido_selecionado,
-                                    novo_status,
-                                    st.session_state.get('nome_usuario', 'Sistema')
-                                )
-                                st.success("Status atualizado com sucesso!")
-                                st.experimental_rerun()
-                            except Exception as e:
-                                st.error(f"Erro ao atualizar status: {str(e)}")
                     
-                    # Itens do pedido
-                    st.markdown("#### Itens do Pedido")
-                    if detalhes['itens']:
-                        df_itens = pd.DataFrame(detalhes['itens'])
-                        df_itens = df_itens[[
-                            'cod_yazaki', 'codigo_cabo', 'seccao', 'cor', 'quantidade'
-                        ]]
-                        df_itens.columns = [
-                            'CÓD Yazaki', 'Código Cabo', 'Seção', 'Cor', 'Quantidade'
-                        ]
-                        st.dataframe(df_itens)
-                    else:
-                        st.info("Nenhum item encontrado para este pedido.")
+                    with col_nome:
+                        nome_usuario = st.text_input(
+                            "Nome do Responsável",
+                            value=st.session_state.get('nome_usuario', ''),
+                            placeholder="Digite seu nome completo"
+                        )
+
+                    # Centralizar o botão de atualização
+                    col1, col2, col3 = st.columns([1,2,1])
+                    with col2:
+                        if st.button("Atualizar Status", use_container_width=True):
+                            if not nome_usuario:
+                                st.error("Por favor, informe o nome do responsável!")
+                            else:
+                                try:
+                                    # Salvar o nome do usuário na sessão
+                                    st.session_state['nome_usuario'] = nome_usuario
+                                    
+                                    self.controller.atualizar_status_pedido(
+                                        pedido_selecionado,
+                                        novo_status,
+                                        nome_usuario
+                                    )
+                                    st.success("Status atualizado com sucesso!")
+                                    st.experimental_rerun()
+                                except Exception as e:
+                                    st.error(f"Erro ao atualizar status: {str(e)}")
                     
                     # Observações
                     if detalhes['info'].get('Observacoes'):
+                        st.markdown("---")
                         st.markdown("#### Observações")
                         st.write(detalhes['info']['Observacoes'])
             else:

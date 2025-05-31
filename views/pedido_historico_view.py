@@ -208,7 +208,7 @@ class PedidoHistoricoView:
                         else:
                             st.info("Nenhum item encontrado para este pedido.")
 
-                    # Botão de impressão, selectbox de status, campo de nome e botão de atualizar status em coluna única
+                    # Botão de impressão
                     if st.button("🖨️ Imprimir", help="Imprimir pedido"):
                         try:
                             self.controller.imprimir_pedido(pedido_selecionado)
@@ -216,16 +216,17 @@ class PedidoHistoricoView:
                         except Exception as e:
                             st.error(f"Erro ao imprimir pedido: {str(e)}")
 
-                    novo_status = st.selectbox(
-                        "Novo Status",
-                        ["Pendente", "Em Processamento", "Concluído"],
-                        index=["Pendente", "Em Processamento", "Concluído"].index(detalhes['status']) if detalhes['status'] in ["Pendente", "Em Processamento", "Concluído"] else 0
-                    )
-
+                    # Campos em coluna única, um abaixo do outro
                     nome_usuario = st.text_input(
                         "Responsável",
                         value=st.session_state.get('nome_usuario', ''),
                         placeholder="Digite seu nome"
+                    )
+
+                    novo_status = st.selectbox(
+                        "Novo Status",
+                        ["Pendente", "Em Processamento", "Concluído"],
+                        index=["Pendente", "Em Processamento", "Concluído"].index(detalhes['status']) if detalhes['status'] in ["Pendente", "Em Processamento", "Concluído"] else 0
                     )
 
                     if st.button("Atualizar Status", use_container_width=True):

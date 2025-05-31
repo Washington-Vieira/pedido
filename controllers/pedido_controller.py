@@ -246,9 +246,9 @@ class PedidoController:
             raise Exception(f"Erro ao buscar detalhes do pedido: {str(e)}")
 
     def atualizar_status_pedido(self, numero_pedido: str, novo_status: str, responsavel: str):
-        """Atualiza o status de um pedido localmente e tenta sincronizar com Google Sheets (método anterior)."""
+        """Atualiza o status de um pedido localmente e no Google Sheets."""
         try:
-            # Carregar dados existentes do Sheets (pode causar erro de cota se chamado frequentemente)
+            # Carregar dados existentes do Sheets
             df_pedidos = self._ler_pedidos()
             df_itens = self._ler_itens()
 
@@ -256,8 +256,9 @@ class PedidoController:
             idx = df_pedidos[df_pedidos['Numero_Pedido'] == numero_pedido].index[0]
 
             # Atualizar status no DataFrame
+            ultima_atualizacao = datetime.now().strftime('%d/%m/%Y %H:%M')
             df_pedidos.loc[idx, 'Status'] = novo_status
-            df_pedidos.loc[idx, 'Ultima_Atualizacao'] = datetime.now().strftime('%d/%m/%Y %H:%M')
+            df_pedidos.loc[idx, 'Ultima_Atualizacao'] = ultima_atualizacao
             df_pedidos.loc[idx, 'Responsavel_Atualizacao'] = responsavel
 
             # Fazer backup antes de salvar localmente
@@ -268,19 +269,20 @@ class PedidoController:
                 df_pedidos.to_excel(writer, sheet_name='Pedidos', index=False)
                 df_itens.to_excel(writer, sheet_name='Itens', index=False)
 
-            # Sincronizar TUDO com Google Sheets (pode causar erro de cota e não atualizar se _ler_pedidos falhou)
-            # Nota: Esta operação reescreve as abas completas no Sheets.
-            success_sheets, message_sheets = self.sheets_sync.salvar_pedido_completo(df_pedidos, df_itens)
+            # Atualizar apenas o status no Google Sheets
+            success_sheets, message_sheets = self.sheets_sync.atualizar_status_pedido_sheets(
+                numero_pedido=numero_pedido,
+                novo_status=novo_status,
+                ultima_atualizacao=ultima_atualizacao,
+                responsavel=responsavel
+            )
             
             if not success_sheets:
-                 # Reportar o erro do Sheets, mas a atualização local deve ter ocorrido
-                 st.warning(f"Aviso ao sincronizar status com Google Sheets: {message_sheets}")
+                st.warning(f"Aviso ao sincronizar status com Google Sheets: {message_sheets}")
 
         except IndexError:
-             # Tratar caso o pedido não seja encontrado após ler os dados
-             raise Exception(f"Erro ao atualizar status: Pedido {numero_pedido} não encontrado nos dados carregados.")
+            raise Exception(f"Erro ao atualizar status: Pedido {numero_pedido} não encontrado nos dados carregados.")
         except Exception as e:
-            # Capturar quaisquer outros erros durante o processo
             raise Exception(f"Erro geral ao atualizar status do pedido: {str(e)}")
 
     @staticmethod

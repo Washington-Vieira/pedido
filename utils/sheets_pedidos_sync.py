@@ -19,12 +19,12 @@ class SheetsPedidosSync:
     def load_config(self):
         """Carrega as credenciais do Google Sheets"""
         try:
-            if os.path.exists(self.config_file):
-                with open(self.config_file, 'r') as f:
-                    self.config = json.load(f)
+        if os.path.exists(self.config_file):
+            with open(self.config_file, 'r') as f:
+                self.config = json.load(f)
                     # Usar URL da planilha do config se existir, senão usar vazio
                     self.SPREADSHEET_URL = self.config.get('sheets_url', '')
-            else:
+        else:
                 self.config = {
                     'sheets_credentials': None,
                     'sheets_url': ''
@@ -39,8 +39,8 @@ class SheetsPedidosSync:
     def save_config(self):
         """Salva configuração atual"""
         try:
-            with open(self.config_file, 'w') as f:
-                json.dump(self.config, f, indent=4)
+        with open(self.config_file, 'w') as f:
+            json.dump(self.config, f, indent=4)
         except Exception as e:
             st.error(f"Erro ao salvar configurações: {str(e)}")
 
@@ -91,7 +91,7 @@ class SheetsPedidosSync:
 
             # Abrir a planilha pelo URL
             try:
-                sheet = self.client.open_by_url(self.SPREADSHEET_URL)
+            sheet = self.client.open_by_url(self.SPREADSHEET_URL)
             except Exception as e:
                 raise ValueError(f"Erro ao abrir planilha: {str(e)}")
 

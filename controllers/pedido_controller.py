@@ -279,6 +279,10 @@ class PedidoController:
             
             if not success_sheets:
                 st.warning(f"Aviso ao sincronizar status com Google Sheets: {message_sheets}")
+            else:
+                st.success("Status atualizado com sucesso!")
+                # Força o refresh da página após a atualização
+                st.experimental_rerun()
 
         except IndexError:
             raise Exception(f"Erro ao atualizar status: Pedido {numero_pedido} não encontrado nos dados carregados.")

@@ -257,26 +257,32 @@ class PedidoHistoricoView:
 
     def mostrar_interface(self):
         """Mostra a interface do histórico de pedidos"""
-        st.markdown("### 📋 Histórico de Pedidos")
-        
-        # Filtro de Status
-        status_filtro = st.selectbox(
-            "Status do Pedido",
-            ["Todos", "Pendente", "Concluído", "Em Processamento"]
-        )
-        
-        # Filtro por Data
-        col_data1, col_data2 = st.columns(2)
-        with col_data1:
-            data_inicial = st.date_input("Data inicial", value=None, key="filtro_data_inicial")
-        with col_data2:
-            data_final = st.date_input("Data final", value=None, key="filtro_data_final")
-        
         try:
-            # Buscar pedidos
-            df_pedidos = self.controller.buscar_pedidos(
-                status=None if status_filtro == "Todos" else status_filtro
+            # Buscar pedidos primeiro para o dashboard
+            df_pedidos = self.controller.buscar_pedidos(status=None)  # Buscar todos os pedidos para o dashboard
+            
+            if not df_pedidos.empty:
+                # Mostrar dashboard no topo
+                self._mostrar_dashboard(df_pedidos)
+            
+            st.markdown("### 📋 Histórico de Pedidos")
+            
+            # Filtro de Status
+            status_filtro = st.selectbox(
+                "Status do Pedido",
+                ["Todos", "Pendente", "Concluído", "Em Processamento"]
             )
+            
+            # Filtro por Data
+            col_data1, col_data2 = st.columns(2)
+            with col_data1:
+                data_inicial = st.date_input("Data inicial", value=None, key="filtro_data_inicial")
+            with col_data2:
+                data_final = st.date_input("Data final", value=None, key="filtro_data_final")
+            
+            # Atualizar df_pedidos com os filtros
+            if status_filtro != "Todos":
+                df_pedidos = df_pedidos[df_pedidos["Status"] == status_filtro]
             
             # Aplicar filtro de data se selecionado
             if not df_pedidos.empty and (data_inicial or data_final):
@@ -290,9 +296,6 @@ class PedidoHistoricoView:
             if df_pedidos.empty:
                 st.warning("Por favor, recarregue a página e aguarde um minuto antes de tentar novamente.")
                 return
-            
-            # Mostrar dashboard antes da lista de pedidos
-            self._mostrar_dashboard(df_pedidos)
             
             # Mostrar total de pedidos
             st.write(f"Total: {len(df_pedidos)} pedidos encontrados")

@@ -6,6 +6,7 @@ import streamlit as st
 import os
 import shutil
 from utils.sheets_pedidos_sync import SheetsPedidosSync
+import webbrowser
 
 class PedidoController:
     def __init__(self, caminho_planilha: str):
@@ -372,7 +373,19 @@ class PedidoController:
                         border-top: 1px solid black; 
                         margin: 50px auto 10px auto; 
                     }}
+                    @media print {{
+                        body {{ margin: 0; padding: 20px; }}
+                        .no-print {{ display: none; }}
+                    }}
                 </style>
+                <script>
+                    window.onload = function() {{
+                        window.print();
+                        setTimeout(function() {{
+                            window.close();
+                        }}, 1000);
+                    }};
+                </script>
             </head>
             <body>
                 <div class="header">
@@ -430,8 +443,8 @@ class PedidoController:
             with open(temp_html, "w", encoding="utf-8") as f:
                 f.write(html)
             
-            # Enviar para impressão usando o navegador padrão
-            os.startfile(temp_html, "print")
+            # Abrir no navegador padrão para impressão
+            webbrowser.open(f'file://{os.path.abspath(temp_html)}', new=2)
             
             # Aguardar um pouco e remover arquivo temporário
             import time

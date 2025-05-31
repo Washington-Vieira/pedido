@@ -182,32 +182,33 @@ class PedidoHistoricoView:
                     # Buscar detalhes do pedido
                     detalhes = self.controller.get_pedido_detalhes(pedido_selecionado)
                     
-                    # Informações
-                    st.markdown("#### Informações")
-                    st.write(f"**Número:** {detalhes['info']['Numero_Pedido']}")
-                    st.write(f"**Data:** {detalhes['info']['Data']}")
-                    st.write(f"**Cliente:** {detalhes['info']['Cliente']}")
-                    st.write(f"**RACK:** {detalhes['info']['RACK']}")
-                    st.write(f"**Localização:** {detalhes['info']['Localizacao']}")
-                    st.write(f"**Solicitante:** {detalhes['info']['Solicitante']}")
-                    st.write(f"**Status:** {detalhes['status']}")
+                    # Informações e Itens do Pedido lado a lado
+                    col_info, col_itens = st.columns(2)
+                    with col_info:
+                        st.markdown("#### Informações")
+                        st.write(f"**Número:** {detalhes['info']['Numero_Pedido']}")
+                        st.write(f"**Data:** {detalhes['info']['Data']}")
+                        st.write(f"**Cliente:** {detalhes['info']['Cliente']}")
+                        st.write(f"**RACK:** {detalhes['info']['RACK']}")
+                        st.write(f"**Localização:** {detalhes['info']['Localizacao']}")
+                        st.write(f"**Solicitante:** {detalhes['info']['Solicitante']}")
+                        st.write(f"**Status:** {detalhes['status']}")
+                    with col_itens:
+                        st.markdown("#### Itens do Pedido")
+                        if detalhes['itens']:
+                            for idx, item in enumerate(detalhes['itens'], 1):
+                                st.write(f"**Item {idx}**")
+                                st.write(f"**CÓD Yazaki:** {item['cod_yazaki']}")
+                                st.write(f"**Código Cabo:** {item['codigo_cabo']}")
+                                st.write(f"**Seção:** {item['seccao']}")
+                                st.write(f"**Cor:** {item['cor']}")
+                                st.write(f"**Quantidade:** {item['quantidade']}")
+                                if idx < len(detalhes['itens']):
+                                    st.markdown("---")
+                        else:
+                            st.info("Nenhum item encontrado para este pedido.")
 
-                    # Itens do pedido no mesmo layout
-                    st.markdown("#### Itens do Pedido")
-                    if detalhes['itens']:
-                        for idx, item in enumerate(detalhes['itens'], 1):
-                            st.write(f"**Item {idx}**")
-                            st.write(f"**CÓD Yazaki:** {item['cod_yazaki']}")
-                            st.write(f"**Código Cabo:** {item['codigo_cabo']}")
-                            st.write(f"**Seção:** {item['seccao']}")
-                            st.write(f"**Cor:** {item['cor']}")
-                            st.write(f"**Quantidade:** {item['quantidade']}")
-                            if idx < len(detalhes['itens']):
-                                st.markdown("---")
-                    else:
-                        st.info("Nenhum item encontrado para este pedido.")
-
-                    # Botão de impressão
+                    # Botão de impressão, campo de nome e botão de atualizar status em linha
                     col_imp, col_nome, col_status, col_btn = st.columns([1,2,2,2])
                     with col_imp:
                         if st.button("🖨️ Imprimir", help="Imprimir pedido"):

@@ -214,8 +214,12 @@ class PedidoHistoricoView:
                 # Botão de impressão
                 if st.button("🖨️ Imprimir", help="Imprimir pedido"):
                     try:
-                        self.controller.imprimir_pedido(pedido_selecionado)
-                        st.success("Pedido enviado para impressão!")
+                        link_html = self.controller.imprimir_pedido(pedido_selecionado)
+                        if link_html:
+                            st.success("Pedido pronto para impressão! Clique no link abaixo para abrir o comprovante.")
+                            st.markdown(link_html, unsafe_allow_html=True)
+                        else:
+                            st.error("Erro ao gerar o comprovante do pedido.")
                     except Exception as e:
                         st.error(f"Erro ao imprimir pedido: {str(e)}")
 

@@ -355,7 +355,7 @@ class PedidoController:
         return self.filtrar_dados(self.pedidos, cliente=cliente, rack=rack)
 
     def imprimir_pedido(self, numero_pedido: str):
-        """Gera um arquivo HTML do pedido e exibe um link para visualização e impressão no navegador do usuário"""
+        """Gera um arquivo HTML do pedido e retorna o link HTML para visualização e impressão no navegador do usuário"""
         try:
             # Buscar detalhes do pedido
             detalhes = self.get_pedido_detalhes(numero_pedido)
@@ -519,9 +519,10 @@ class PedidoController:
                 b64 = base64.b64encode(html_bytes).decode()
             
             href = f'data:text/html;base64,{b64}'
-            st.markdown(
-                f'<a href="{href}" target="_blank" style="font-size:18px;color:#007bff;font-weight:bold;">🔗 Abrir comprovante do pedido em nova guia</a>',
-                unsafe_allow_html=True
+            link_html = (
+                f'<a href="{href}" target="_blank" style="font-size:18px;color:#007bff;font-weight:bold;">'
+                '🔗 Abrir comprovante do pedido em nova guia</a>'
             )
+            return link_html
         except Exception as e:
-            st.error(f"Erro ao gerar comprovante do pedido: {str(e)}")
+            return None

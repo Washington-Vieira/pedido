@@ -183,73 +183,58 @@ class PedidoHistoricoView:
                     detalhes = self.controller.get_pedido_detalhes(pedido_selecionado)
                     
                     # Informações
-                    col1, col2 = st.columns(2)
-                    
-                    with col1:
-                        st.markdown("#### Informações")
-                        st.write(f"**Número:** {detalhes['info']['Numero_Pedido']}")
-                        st.write(f"**Data:** {detalhes['info']['Data']}")
-                        st.write(f"**Cliente:** {detalhes['info']['Cliente']}")
-                        st.write(f"**RACK:** {detalhes['info']['RACK']}")
-                        st.write(f"**Localização:** {detalhes['info']['Localizacao']}")
-                        st.write(f"**Solicitante:** {detalhes['info']['Solicitante']}")
-                        st.write(f"**Status:** {detalhes['status']}")
-                        
-                        # Botão de impressão simplificado
-                        if st.button("🖨️", help="Imprimir pedido"):
+                    st.markdown("#### Informações")
+                    st.write(f"**Número:** {detalhes['info']['Numero_Pedido']}")
+                    st.write(f"**Data:** {detalhes['info']['Data']}")
+                    st.write(f"**Cliente:** {detalhes['info']['Cliente']}")
+                    st.write(f"**RACK:** {detalhes['info']['RACK']}")
+                    st.write(f"**Localização:** {detalhes['info']['Localizacao']}")
+                    st.write(f"**Solicitante:** {detalhes['info']['Solicitante']}")
+                    st.write(f"**Status:** {detalhes['status']}")
+
+                    # Itens do pedido no mesmo layout
+                    st.markdown("#### Itens do Pedido")
+                    if detalhes['itens']:
+                        for idx, item in enumerate(detalhes['itens'], 1):
+                            st.write(f"**Item {idx}**")
+                            st.write(f"**CÓD Yazaki:** {item['cod_yazaki']}")
+                            st.write(f"**Código Cabo:** {item['codigo_cabo']}")
+                            st.write(f"**Seção:** {item['seccao']}")
+                            st.write(f"**Cor:** {item['cor']}")
+                            st.write(f"**Quantidade:** {item['quantidade']}")
+                            if idx < len(detalhes['itens']):
+                                st.markdown("---")
+                    else:
+                        st.info("Nenhum item encontrado para este pedido.")
+
+                    # Botão de impressão
+                    col_imp, col_nome, col_status, col_btn = st.columns([1,2,2,2])
+                    with col_imp:
+                        if st.button("🖨️ Imprimir", help="Imprimir pedido"):
                             try:
                                 self.controller.imprimir_pedido(pedido_selecionado)
                                 st.success("Pedido enviado para impressão!")
                             except Exception as e:
                                 st.error(f"Erro ao imprimir pedido: {str(e)}")
-                    
-                    with col2:
-                        st.markdown("#### Itens do Pedido")
-                        if detalhes['itens']:
-                            for idx, item in enumerate(detalhes['itens'], 1):
-                                st.write(f"**Item {idx}**")
-                                st.write(f"**CÓD Yazaki:** {item['cod_yazaki']}")
-                                st.write(f"**Código Cabo:** {item['codigo_cabo']}")
-                                st.write(f"**Seção:** {item['seccao']}")
-                                st.write(f"**Cor:** {item['cor']}")
-                                st.write(f"**Quantidade:** {item['quantidade']}")
-                                if idx < len(detalhes['itens']):
-                                    st.markdown("---")
-                        else:
-                            st.info("Nenhum item encontrado para este pedido.")
-
-                    # Atualização de Status em uma nova linha
-                    st.markdown("---")
-                    st.markdown("#### Atualizar Status")
-                    
-                    # Dividir em duas colunas para status e nome
-                    col_status, col_nome = st.columns(2)
-                    
+                    with col_nome:
+                        nome_usuario = st.text_input(
+                            "Responsável",
+                            value=st.session_state.get('nome_usuario', ''),
+                            placeholder="Digite seu nome"
+                        )
                     with col_status:
                         novo_status = st.selectbox(
                             "Novo Status",
                             ["Pendente", "Em Processamento", "Concluído"],
                             index=["Pendente", "Em Processamento", "Concluído"].index(detalhes['status']) if detalhes['status'] in ["Pendente", "Em Processamento", "Concluído"] else 0
                         )
-                    
-                    with col_nome:
-                        nome_usuario = st.text_input(
-                            "Nome do Responsável",
-                            value=st.session_state.get('nome_usuario', ''),
-                            placeholder="Digite seu nome completo"
-                        )
-
-                    # Centralizar o botão de atualização
-                    col1, col2, col3 = st.columns([1,2,1])
-                    with col2:
+                    with col_btn:
                         if st.button("Atualizar Status", use_container_width=True):
                             if not nome_usuario:
                                 st.error("Por favor, informe o nome do responsável!")
                             else:
                                 try:
-                                    # Salvar o nome do usuário na sessão
                                     st.session_state['nome_usuario'] = nome_usuario
-                                    
                                     self.controller.atualizar_status_pedido(
                                         pedido_selecionado,
                                         novo_status,
@@ -259,7 +244,7 @@ class PedidoHistoricoView:
                                     st.experimental_rerun()
                                 except Exception as e:
                                     st.error(f"Erro ao atualizar status: {str(e)}")
-                    
+
                     # Observações
                     if detalhes['info'].get('Observacoes'):
                         st.markdown("---")

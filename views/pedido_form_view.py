@@ -104,7 +104,7 @@ class PedidoFormView:
                     """)
                     
                     # Limpar formulário (recarregar página)
-                    st.experimental_rerun()
+                    st.rerun()
                     
         except Exception as e:
             st.error(f"""

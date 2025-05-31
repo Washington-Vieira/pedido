@@ -21,6 +21,7 @@ backup/
 *.tmp
 *.temp
 repo_temp/
+temp/
 
 # Configurações locais
 config.json

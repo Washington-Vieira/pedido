@@ -7,6 +7,7 @@ import os
 import shutil
 from utils.sheets_pedidos_sync import SheetsPedidosSync
 import webbrowser
+import pathlib
 
 class PedidoController:
     def __init__(self, caminho_planilha: str):
@@ -358,6 +359,14 @@ class PedidoController:
             # Buscar detalhes do pedido
             detalhes = self.get_pedido_detalhes(numero_pedido)
             
+            # Criar diretório temporário se não existir
+            temp_dir = os.path.join(os.getcwd(), 'temp')
+            os.makedirs(temp_dir, exist_ok=True)
+            
+            # Gerar caminho absoluto para o arquivo HTML
+            temp_html = os.path.join(temp_dir, f"pedido_{numero_pedido}.html")
+            temp_html_path = pathlib.Path(temp_html).absolute()
+            
             # Gerar HTML para impressão
             html = f"""
             <html>
@@ -406,6 +415,7 @@ class PedidoController:
                         text-align: center;
                         display: flex;
                         justify-content: space-around;
+                        page-break-inside: avoid;
                     }}
                     .signature-line {{ 
                         width: 200px; 
@@ -423,6 +433,7 @@ class PedidoController:
                         border-radius: 5px;
                         cursor: pointer;
                         font-size: 16px;
+                        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
                     }}
                     .print-button:hover {{
                         background-color: #0056b3;
@@ -436,6 +447,7 @@ class PedidoController:
                         .container {{
                             box-shadow: none;
                             padding: 0;
+                            max-width: 100%;
                         }}
                         .print-button {{
                             display: none;
@@ -497,20 +509,19 @@ class PedidoController:
             </html>
             """
             
-            # Criar diretório temporário se não existir
-            temp_dir = os.path.join(os.getcwd(), 'temp')
-            os.makedirs(temp_dir, exist_ok=True)
-            
             # Salvar HTML temporário
-            temp_html = os.path.join(temp_dir, f"pedido_{numero_pedido}.html")
-            with open(temp_html, "w", encoding="utf-8") as f:
+            with open(temp_html_path, "w", encoding="utf-8") as f:
                 f.write(html)
             
-            # Abrir no navegador padrão
-            webbrowser.open(f'file://{os.path.abspath(temp_html)}', new=2)
+            # Converter o caminho para URL format
+            file_url = pathlib.Path(temp_html_path).as_uri()
             
-            # Não vamos mais remover o arquivo imediatamente
-            # O arquivo será mantido na pasta temp/ para visualização
+            # Abrir no navegador padrão
+            webbrowser.open(file_url, new=2)
+            
+            # Retornar sucesso
+            return True
             
         except Exception as e:
-            raise Exception(f"Erro ao gerar comprovante do pedido: {str(e)}")
+            st.error(f"Erro ao gerar comprovante do pedido: {str(e)}")
+            return False

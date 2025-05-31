@@ -250,9 +250,11 @@ class SheetsPedidosSync:
         """Busca os detalhes de um pedido pelo número diretamente do Google Sheets."""
         try:
             if not self.client:
-                raise ValueError("Cliente do Google Sheets não configurado. Verifique as credenciais.")
+                st.warning("Por favor, recarregue a página e aguarde um minuto antes de tentar novamente.")
+                return {}
             if not self.SPREADSHEET_URL:
-                raise ValueError("URL da planilha não configurada.")
+                st.warning("Por favor, recarregue a página e aguarde um minuto antes de tentar novamente.")
+                return {}
             
             sheet = self.client.open_by_url(self.SPREADSHEET_URL)
             ws_pedidos = sheet.worksheet("Pedidos")
@@ -262,7 +264,7 @@ class SheetsPedidosSync:
             pedidos_data = ws_pedidos.get_all_records()
             pedido = next((p for p in pedidos_data if p.get("Numero_Pedido") == numero_pedido), None)
             if not pedido:
-                raise ValueError(f"Pedido {numero_pedido} não encontrado.")
+                return {}
             
             # Buscar itens na aba Itens
             itens_data = ws_itens.get_all_records()
@@ -287,7 +289,9 @@ class SheetsPedidosSync:
                 "status": pedido.get("Status", "")
             }
         except Exception as e:
-            raise Exception(f"Erro ao buscar detalhes do pedido no Google Sheets: {str(e)}")
+            if "Quota exceeded" in str(e) or "[429]" in str(e):
+                st.warning("Por favor, recarregue a página e aguarde um minuto antes de tentar novamente.")
+            return {}
 
     def atualizar_status_pedido_sheets(self, numero_pedido: str, novo_status: str, ultima_atualizacao: str, responsavel: str) -> tuple[bool, str]:
         """Atualiza o status de um pedido diretamente no Google Sheets."""

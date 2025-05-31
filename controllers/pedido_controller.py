@@ -272,17 +272,15 @@ class PedidoController:
             if cache_key in st.session_state:
                 return st.session_state[cache_key]
             if not hasattr(self, 'sheets_sync') or not self.sheets_sync.client:
-                raise ValueError("Cliente do Google Sheets não configurado. Verifique as credenciais.")
+                st.warning("Por favor, recarregue a página e aguarde um minuto antes de tentar novamente.")
+                return {}
             detalhes = self.sheets_sync.get_pedido_detalhes(numero_pedido)
             st.session_state[cache_key] = detalhes
             return detalhes
         except Exception as e:
             if "Quota exceeded" in str(e) or "[429]" in str(e):
-                st.error("Limite de acesso. Aguarde um minuto e tente novamente.")
-                return {}
-            else:
-                st.error("Erro ao acessar os dados do pedido. Tente novamente ou contate o suporte.")
-                return {}
+                st.warning("Por favor, recarregue a página e aguarde um minuto antes de tentar novamente.")
+            return {}
 
     def atualizar_status_pedido(self, numero_pedido: str, novo_status: str, responsavel: str):
         """Atualiza o status de um pedido localmente e no Google Sheets."""

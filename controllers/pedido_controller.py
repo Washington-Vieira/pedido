@@ -353,7 +353,7 @@ class PedidoController:
         return self.filtrar_dados(self.pedidos, cliente=cliente, rack=rack)
 
     def imprimir_pedido(self, numero_pedido: str):
-        """Gera um arquivo PDF do pedido e envia para impressão"""
+        """Gera um arquivo HTML do pedido para visualização e impressão"""
         try:
             # Buscar detalhes do pedido
             detalhes = self.get_pedido_detalhes(numero_pedido)
@@ -362,94 +362,155 @@ class PedidoController:
             html = f"""
             <html>
             <head>
+                <meta charset="utf-8">
+                <title>Pedido #{numero_pedido}</title>
                 <style>
-                    body {{ font-family: Arial, sans-serif; }}
-                    .header {{ text-align: center; margin-bottom: 20px; }}
-                    .info {{ margin-bottom: 20px; }}
-                    .item {{ margin-bottom: 10px; }}
-                    .signatures {{ margin-top: 50px; text-align: center; }}
+                    body {{ 
+                        font-family: Arial, sans-serif;
+                        margin: 0;
+                        padding: 20px;
+                        background-color: #f5f5f5;
+                    }}
+                    .container {{
+                        max-width: 800px;
+                        margin: 0 auto;
+                        background-color: white;
+                        padding: 30px;
+                        border-radius: 8px;
+                        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                    }}
+                    .header {{ 
+                        text-align: center;
+                        margin-bottom: 30px;
+                        padding-bottom: 20px;
+                        border-bottom: 2px solid #eee;
+                    }}
+                    .info {{ 
+                        margin-bottom: 30px;
+                        background-color: #f8f9fa;
+                        padding: 20px;
+                        border-radius: 6px;
+                    }}
+                    .item {{ 
+                        margin-bottom: 20px;
+                        padding: 15px;
+                        border: 1px solid #ddd;
+                        border-radius: 6px;
+                    }}
+                    .item h3 {{
+                        margin-top: 0;
+                        color: #2c3e50;
+                    }}
+                    .signatures {{ 
+                        margin-top: 50px;
+                        text-align: center;
+                        display: flex;
+                        justify-content: space-around;
+                    }}
                     .signature-line {{ 
                         width: 200px; 
                         border-top: 1px solid black; 
                         margin: 50px auto 10px auto; 
                     }}
+                    .print-button {{
+                        position: fixed;
+                        bottom: 20px;
+                        right: 20px;
+                        padding: 10px 20px;
+                        background-color: #007bff;
+                        color: white;
+                        border: none;
+                        border-radius: 5px;
+                        cursor: pointer;
+                        font-size: 16px;
+                    }}
+                    .print-button:hover {{
+                        background-color: #0056b3;
+                    }}
                     @media print {{
-                        body {{ margin: 0; padding: 20px; }}
-                        .no-print {{ display: none; }}
+                        body {{ 
+                            background-color: white;
+                            margin: 0;
+                            padding: 0;
+                        }}
+                        .container {{
+                            box-shadow: none;
+                            padding: 0;
+                        }}
+                        .print-button {{
+                            display: none;
+                        }}
                     }}
                 </style>
-                <script>
-                    window.onload = function() {{
-                        window.print();
-                        setTimeout(function() {{
-                            window.close();
-                        }}, 1000);
-                    }};
-                </script>
             </head>
             <body>
-                <div class="header">
-                    <h1>Pedido de Requisição #{numero_pedido}</h1>
-                    <p>Data: {detalhes['info']['Data']}</p>
-                </div>
-                
-                <div class="info">
-                    <h2>Informações do Pedido</h2>
-                    <p><strong>Cliente:</strong> {detalhes['info']['Cliente']}</p>
-                    <p><strong>RACK:</strong> {detalhes['info']['RACK']}</p>
-                    <p><strong>Localização:</strong> {detalhes['info']['Localizacao']}</p>
-                    <p><strong>Solicitante:</strong> {detalhes['info']['Solicitante']}</p>
-                    <p><strong>Status:</strong> {detalhes['status']}</p>
-                </div>
-                
-                <div class="items">
-                    <h2>Itens</h2>
+                <div class="container">
+                    <div class="header">
+                        <h1>Pedido de Requisição #{numero_pedido}</h1>
+                        <p>Data: {detalhes['info']['Data']}</p>
+                    </div>
+                    
+                    <div class="info">
+                        <h2>Informações do Pedido</h2>
+                        <p><strong>Cliente:</strong> {detalhes['info']['Cliente']}</p>
+                        <p><strong>RACK:</strong> {detalhes['info']['RACK']}</p>
+                        <p><strong>Localização:</strong> {detalhes['info']['Localizacao']}</p>
+                        <p><strong>Solicitante:</strong> {detalhes['info']['Solicitante']}</p>
+                        <p><strong>Status:</strong> {detalhes['status']}</p>
+                    </div>
+                    
+                    <div class="items">
+                        <h2>Itens</h2>
             """
             
             # Adicionar itens
             for idx, item in enumerate(detalhes['itens'], 1):
                 html += f"""
-                    <div class="item">
-                        <h3>Item {idx}</h3>
-                        <p><strong>CÓD Yazaki:</strong> {item['cod_yazaki']}</p>
-                        <p><strong>Código Cabo:</strong> {item['codigo_cabo']}</p>
-                        <p><strong>Seção:</strong> {item['seccao']}</p>
-                        <p><strong>Cor:</strong> {item['cor']}</p>
-                        <p><strong>Quantidade:</strong> {item['quantidade']}</p>
-                    </div>
+                        <div class="item">
+                            <h3>Item {idx}</h3>
+                            <p><strong>CÓD Yazaki:</strong> {item['cod_yazaki']}</p>
+                            <p><strong>Código Cabo:</strong> {item['codigo_cabo']}</p>
+                            <p><strong>Seção:</strong> {item['seccao']}</p>
+                            <p><strong>Cor:</strong> {item['cor']}</p>
+                            <p><strong>Quantidade:</strong> {item['quantidade']}</p>
+                        </div>
                 """
             
-            # Adicionar área de assinaturas
+            # Adicionar área de assinaturas e botão de impressão
             html += """
-                </div>
-                
-                <div class="signatures">
-                    <div>
-                        <div class="signature-line"></div>
-                        <p>Solicitante</p>
                     </div>
                     
-                    <div>
-                        <div class="signature-line"></div>
-                        <p>Aprovação</p>
+                    <div class="signatures">
+                        <div>
+                            <div class="signature-line"></div>
+                            <p>Solicitante</p>
+                        </div>
+                        
+                        <div>
+                            <div class="signature-line"></div>
+                            <p>Aprovação</p>
+                        </div>
                     </div>
                 </div>
+                <button onclick="window.print()" class="print-button">Imprimir Pedido</button>
             </body>
             </html>
             """
             
+            # Criar diretório temporário se não existir
+            temp_dir = os.path.join(os.getcwd(), 'temp')
+            os.makedirs(temp_dir, exist_ok=True)
+            
             # Salvar HTML temporário
-            temp_html = f"temp_{numero_pedido}.html"
+            temp_html = os.path.join(temp_dir, f"pedido_{numero_pedido}.html")
             with open(temp_html, "w", encoding="utf-8") as f:
                 f.write(html)
             
-            # Abrir no navegador padrão para impressão
+            # Abrir no navegador padrão
             webbrowser.open(f'file://{os.path.abspath(temp_html)}', new=2)
             
-            # Aguardar um pouco e remover arquivo temporário
-            import time
-            time.sleep(5)
-            os.remove(temp_html)
+            # Não vamos mais remover o arquivo imediatamente
+            # O arquivo será mantido na pasta temp/ para visualização
             
         except Exception as e:
-            raise Exception(f"Erro ao imprimir pedido: {str(e)}")
+            raise Exception(f"Erro ao gerar comprovante do pedido: {str(e)}")

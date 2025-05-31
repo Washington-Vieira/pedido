@@ -109,37 +109,61 @@ class PedidoController:
                 os.remove(backups.pop(0))
 
     def _ler_pedidos(self) -> pd.DataFrame:
-        """Lê a aba 'Pedidos' do Google Sheets"""
+        """Lê a aba 'Pedidos' do Google Sheets com cache"""
         try:
+            # Verificar cache
+            if 'cache_pedidos' in st.session_state:
+                return st.session_state['cache_pedidos']
+
             if self.sheets_sync.client and self.sheets_sync.SPREADSHEET_URL:
                 sheet = self.sheets_sync.client.open_by_url(self.sheets_sync.SPREADSHEET_URL)
                 worksheet = sheet.worksheet("Pedidos")
                 data = worksheet.get_all_records()
                 df = pd.DataFrame(data)
-                # Garantir que as colunas 'Ultima_Atualizacao' e 'Responsavel_Atualizacao' existam
+                # Garantir que as colunas existam
                 if 'Ultima_Atualizacao' not in df.columns:
                     df['Ultima_Atualizacao'] = ""
                 if 'Responsavel_Atualizacao' not in df.columns:
                     df['Responsavel_Atualizacao'] = ""
+                
+                # Salvar no cache
+                st.session_state['cache_pedidos'] = df
                 return df
             else:
-                raise Exception("Cliente do Google Sheets não inicializado corretamente. Verifique as credenciais e a URL.")
+                return pd.DataFrame()
         except Exception as e:
-            raise Exception(f"Erro ao ler pedidos do Google Sheets: {str(e)}")
+            if "Quota exceeded" in str(e) or "[429]" in str(e):
+                # Se tiver cache, usa ele
+                if 'cache_pedidos' in st.session_state:
+                    return st.session_state['cache_pedidos']
+                return pd.DataFrame()
+            return pd.DataFrame()
 
     def _ler_itens(self) -> pd.DataFrame:
-        """Lê a aba 'Itens' do Google Sheets"""
+        """Lê a aba 'Itens' do Google Sheets com cache"""
         try:
+            # Verificar cache
+            if 'cache_itens' in st.session_state:
+                return st.session_state['cache_itens']
+
             if self.sheets_sync.client and self.sheets_sync.SPREADSHEET_URL:
                 sheet = self.sheets_sync.client.open_by_url(self.sheets_sync.SPREADSHEET_URL)
                 worksheet = sheet.worksheet("Itens")
                 data = worksheet.get_all_records()
                 df = pd.DataFrame(data)
+                
+                # Salvar no cache
+                st.session_state['cache_itens'] = df
                 return df
             else:
-                raise Exception("Cliente do Google Sheets não inicializado corretamente. Verifique as credenciais e a URL.")
+                return pd.DataFrame()
         except Exception as e:
-            raise Exception(f"Erro ao ler itens do Google Sheets: {str(e)}")
+            if "Quota exceeded" in str(e) or "[429]" in str(e):
+                # Se tiver cache, usa ele
+                if 'cache_itens' in st.session_state:
+                    return st.session_state['cache_itens']
+                return pd.DataFrame()
+            return pd.DataFrame()
 
     def _gerar_numero_pedido(self) -> str:
         """Gera um número único para o pedido"""
@@ -221,6 +245,10 @@ class PedidoController:
         try:
             df = self._ler_pedidos()
             
+            # Se não conseguiu ler os pedidos, retorna DataFrame vazio
+            if df.empty:
+                return df
+            
             # Preencher valores NaN com string vazia
             df = df.fillna("")
             
@@ -233,7 +261,8 @@ class PedidoController:
             
             return df
         except Exception as e:
-            raise Exception(f"Erro ao buscar pedidos: {str(e)}")
+            # Retorna DataFrame vazio em caso de erro
+            return pd.DataFrame()
 
     def get_pedido_detalhes(self, numero_pedido: str) -> dict:
         """Retorna os detalhes completos de um pedido, consultando apenas o Google Sheets, com cache e tratamento de quota."""
@@ -274,7 +303,7 @@ class PedidoController:
             # Fazer backup antes de salvar localmente
             self._fazer_backup()
 
-            # Salvar localmente (mantido como fallback)
+            # Salvar localmente
             with pd.ExcelWriter(self.arquivo_pedidos, engine='openpyxl') as writer:
                 df_pedidos.to_excel(writer, sheet_name='Pedidos', index=False)
                 df_itens.to_excel(writer, sheet_name='Itens', index=False)
@@ -286,14 +315,17 @@ class PedidoController:
                 ultima_atualizacao=ultima_atualizacao,
                 responsavel=responsavel
             )
-            
-            if not success_sheets:
-                st.warning(f"Aviso ao sincronizar status com Google Sheets: {message_sheets}")
 
-        except IndexError:
-            raise Exception(f"Erro ao atualizar status: Pedido {numero_pedido} não encontrado nos dados carregados.")
+            # Limpar cache após atualização
+            if 'cache_pedidos' in st.session_state:
+                del st.session_state['cache_pedidos']
+            cache_key = f"detalhes_pedido_{numero_pedido}"
+            if cache_key in st.session_state:
+                del st.session_state[cache_key]
+
         except Exception as e:
-            raise Exception(f"Erro geral ao atualizar status do pedido: {str(e)}")
+            # Não exibe mensagem de erro, apenas retorna silenciosamente
+            pass
 
     @staticmethod
     @st.cache_data

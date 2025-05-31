@@ -264,38 +264,69 @@ class PedidoHistoricoView:
                 st.warning("Não foi possível carregar os pedidos. Por favor, tente novamente em alguns instantes.")
 
     def formatar_pedido_para_impressao(self, pedido: dict) -> str:
-        """Formata os detalhes do pedido para impressão"""
+        """Formata os detalhes do pedido para impressão em formato de comprovante fiscal"""
+        # Definir largura do comprovante
+        largura = 40
+        linha = "-" * largura
+        
+        # Cabeçalho
         texto = f"""
-        PEDIDO DE REQUISIÇÃO #{pedido['info']['Numero_Pedido']}
-        Data: {pedido['info']['Data']}
-        
-        INFORMAÇÕES DO PEDIDO
-        --------------------
-        Cliente: {pedido['info']['Cliente']}
-        RACK: {pedido['info']['RACK']}
-        Localização: {pedido['info']['Localizacao']}
-        Solicitante: {pedido['info']['Solicitante']}
-        Status: {pedido['status']}
-        
-        ITENS DO PEDIDO
-        --------------
-        """
-        
+{"REQUISIÇÃO DE BOBINA":^{largura}}
+{linha}
+{"COMPROVANTE DE PEDIDO":^{largura}}
+{linha}
+
+PEDIDO Nº: {pedido['info']['Numero_Pedido']}
+DATA/HORA: {pedido['info']['Data']}
+{linha}
+
+INFORMAÇÕES DO PEDIDO:
+CLIENTE: {pedido['info']['Cliente']}
+RACK: {pedido['info']['RACK']}
+LOCAL.: {pedido['info']['Localizacao']}
+SOLIC.: {pedido['info']['Solicitante']}
+STATUS: {pedido['status']}
+{linha}
+
+ITENS DO PEDIDO:"""
+
+        # Adicionar itens
+        total_itens = 0
         for idx, item in enumerate(pedido['itens'], 1):
             texto += f"""
-        Item {idx}:
-        - CÓD Yazaki: {item['cod_yazaki']}
-        - Código Cabo: {item['codigo_cabo']}
-        - Seção: {item['seccao']}
-        - Cor: {item['cor']}
-        - Quantidade: {item['quantidade']}
-        """
-        
+
+ITEM {idx:02d}
+COD.YAZAKI: {item['cod_yazaki']}
+COD.CABO..: {item['codigo_cabo']}
+SEÇÃO.....: {item['seccao']}
+COR.......: {item['cor']}
+QTDE......: {item['quantidade']}
+{"-" * (largura-10)}"""
+            total_itens += item['quantidade']
+
+        # Adicionar total e observações
+        texto += f"""
+
+{linha}
+TOTAL DE ITENS: {total_itens}
+{linha}"""
+
+        # Adicionar observações se houver
         if pedido['info'].get('Observacoes'):
             texto += f"""
-        OBSERVAÇÕES
-        ----------
-        {pedido['info']['Observacoes']}
-        """
+
+OBSERVAÇÕES:
+{pedido['info']['Observacoes']}
+{linha}"""
+
+        # Adicionar rodapé
+        texto += f"""
+
+{"MANTENHA ESTE COMPROVANTE":^{largura}}
+{"PARA CONTROLE":^{largura}}
+
+{datetime.now().strftime('%d/%m/%Y %H:%M:%S'):^{largura}}
+{"." * largura}
+"""
         
         return texto 

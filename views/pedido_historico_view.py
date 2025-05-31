@@ -43,6 +43,84 @@ class PedidoHistoricoView:
                 font-size: 14px;
             }
 
+            /* Dashboard cards */
+            .dashboard-container {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 10px;
+                margin-bottom: 20px;
+            }
+            
+            .metric-card {
+                background-color: white;
+                border-radius: 8px;
+                padding: 15px;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                min-width: 180px;
+                flex: 1;
+            }
+            
+            .metric-card.total {
+                background-color: #2c3e50;
+                color: white;
+            }
+            
+            .metric-card.concluido {
+                background-color: #90EE90;
+            }
+            
+            .metric-card.processando {
+                background-color: #87CEEB;
+            }
+            
+            .metric-card.pendente {
+                background-color: #ffd700;
+            }
+            
+            .metric-card.urgente {
+                background-color: #ff7f7f;
+                color: white;
+            }
+            
+            .metric-value {
+                font-size: 24px;
+                font-weight: bold;
+                margin: 5px 0;
+            }
+            
+            .metric-label {
+                font-size: 14px;
+                opacity: 0.9;
+            }
+
+            .cliente-dashboard {
+                background-color: white;
+                border-radius: 8px;
+                padding: 15px;
+                margin-bottom: 10px;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            }
+            
+            .cliente-titulo {
+                font-size: 18px;
+                font-weight: bold;
+                margin-bottom: 10px;
+            }
+            
+            .cliente-metricas {
+                display: flex;
+                gap: 10px;
+                flex-wrap: wrap;
+            }
+            
+            .cliente-metrica {
+                flex: 1;
+                min-width: 150px;
+                padding: 10px;
+                border-radius: 4px;
+                text-align: center;
+            }
+
             /* Tabela responsiva */
             .tabela-pedidos {
                 width: 100%;
@@ -91,6 +169,92 @@ class PedidoHistoricoView:
         </style>
         """, unsafe_allow_html=True)
 
+    def _mostrar_dashboard(self, df_pedidos: pd.DataFrame):
+        """Mostra o dashboard gerencial com métricas"""
+        if df_pedidos.empty:
+            return
+
+        # Calcular métricas gerais
+        total_pedidos = len(df_pedidos)
+        total_concluido = len(df_pedidos[df_pedidos['Status'] == 'Concluído'])
+        total_processando = len(df_pedidos[df_pedidos['Status'] == 'Em Processamento'])
+        total_pendente = len(df_pedidos[df_pedidos['Status'] == 'Pendente'])
+        total_urgente_pendente = len(df_pedidos[
+            (df_pedidos['Status'] == 'Pendente') & 
+            (df_pedidos['Urgente'].str.strip().str.lower() == 'sim')
+        ])
+
+        # Mostrar cards com métricas gerais
+        st.markdown("""
+        <div class="dashboard-container">
+            <div class="metric-card total">
+                <div class="metric-label">TOTAL PEDIDOS</div>
+                <div class="metric-value">{}</div>
+            </div>
+            <div class="metric-card concluido">
+                <div class="metric-label">CONCLUÍDO</div>
+                <div class="metric-value">{}</div>
+            </div>
+            <div class="metric-card processando">
+                <div class="metric-label">PROCESSO</div>
+                <div class="metric-value">{}</div>
+            </div>
+            <div class="metric-card pendente">
+                <div class="metric-label">PENDENTE</div>
+                <div class="metric-value">{}</div>
+            </div>
+            <div class="metric-card urgente">
+                <div class="metric-label">URGENTE</div>
+                <div class="metric-value">{}</div>
+            </div>
+        </div>
+        """.format(
+            total_pedidos,
+            total_concluido,
+            total_processando,
+            total_pendente,
+            total_urgente_pendente
+        ), unsafe_allow_html=True)
+
+        # Métricas por cliente
+        clientes = df_pedidos['Cliente'].unique()
+        for cliente in sorted(clientes):
+            df_cliente = df_pedidos[df_pedidos['Cliente'] == cliente]
+            
+            # Calcular métricas do cliente
+            total_concluido = len(df_cliente[df_cliente['Status'] == 'Concluído'])
+            total_processando = len(df_cliente[df_cliente['Status'] == 'Em Processamento'])
+            total_pendente = len(df_cliente[df_cliente['Status'] == 'Pendente'])
+            total_urgente = len(df_cliente[
+                (df_cliente['Status'] == 'Pendente') & 
+                (df_cliente['Urgente'].str.strip().str.lower() == 'sim')
+            ])
+            
+            # Mostrar métricas do cliente
+            st.markdown(f"""
+            <div class="cliente-dashboard">
+                <div class="cliente-titulo">{cliente}</div>
+                <div class="cliente-metricas">
+                    <div class="cliente-metrica" style="background-color: #90EE90">
+                        <div class="metric-label">Concluído</div>
+                        <div class="metric-value">{total_concluido}</div>
+                    </div>
+                    <div class="cliente-metrica" style="background-color: #87CEEB">
+                        <div class="metric-label">Em Processo</div>
+                        <div class="metric-value">{total_processando}</div>
+                    </div>
+                    <div class="cliente-metrica" style="background-color: #ffd700">
+                        <div class="metric-label">Pendente</div>
+                        <div class="metric-value">{total_pendente}</div>
+                    </div>
+                    <div class="cliente-metrica" style="background-color: #ff7f7f; color: white">
+                        <div class="metric-label">Urgente</div>
+                        <div class="metric-value">{total_urgente}</div>
+                    </div>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+
     def mostrar_interface(self):
         """Mostra a interface do histórico de pedidos"""
         st.markdown("### 📋 Histórico de Pedidos")
@@ -126,6 +290,9 @@ class PedidoHistoricoView:
             if df_pedidos.empty:
                 st.warning("Por favor, recarregue a página e aguarde um minuto antes de tentar novamente.")
                 return
+            
+            # Mostrar dashboard antes da lista de pedidos
+            self._mostrar_dashboard(df_pedidos)
             
             # Mostrar total de pedidos
             st.write(f"Total: {len(df_pedidos)} pedidos encontrados")

@@ -208,43 +208,41 @@ class PedidoHistoricoView:
                         else:
                             st.info("Nenhum item encontrado para este pedido.")
 
-                    # Botão de impressão, campo de nome e botão de atualizar status em linha
-                    col_imp, col_nome, col_status, col_btn = st.columns([1,2,2,2])
-                    with col_imp:
-                        if st.button("🖨️ Imprimir", help="Imprimir pedido"):
+                    # Botão de impressão, selectbox de status, campo de nome e botão de atualizar status em coluna única
+                    if st.button("🖨️ Imprimir", help="Imprimir pedido"):
+                        try:
+                            self.controller.imprimir_pedido(pedido_selecionado)
+                            st.success("Pedido enviado para impressão!")
+                        except Exception as e:
+                            st.error(f"Erro ao imprimir pedido: {str(e)}")
+
+                    novo_status = st.selectbox(
+                        "Novo Status",
+                        ["Pendente", "Em Processamento", "Concluído"],
+                        index=["Pendente", "Em Processamento", "Concluído"].index(detalhes['status']) if detalhes['status'] in ["Pendente", "Em Processamento", "Concluído"] else 0
+                    )
+
+                    nome_usuario = st.text_input(
+                        "Responsável",
+                        value=st.session_state.get('nome_usuario', ''),
+                        placeholder="Digite seu nome"
+                    )
+
+                    if st.button("Atualizar Status", use_container_width=True):
+                        if not nome_usuario:
+                            st.error("Por favor, informe o nome do responsável!")
+                        else:
                             try:
-                                self.controller.imprimir_pedido(pedido_selecionado)
-                                st.success("Pedido enviado para impressão!")
+                                st.session_state['nome_usuario'] = nome_usuario
+                                self.controller.atualizar_status_pedido(
+                                    pedido_selecionado,
+                                    novo_status,
+                                    nome_usuario
+                                )
+                                st.success("Status atualizado com sucesso!")
+                                st.experimental_rerun()
                             except Exception as e:
-                                st.error(f"Erro ao imprimir pedido: {str(e)}")
-                    with col_nome:
-                        nome_usuario = st.text_input(
-                            "Responsável",
-                            value=st.session_state.get('nome_usuario', ''),
-                            placeholder="Digite seu nome"
-                        )
-                    with col_status:
-                        novo_status = st.selectbox(
-                            "Novo Status",
-                            ["Pendente", "Em Processamento", "Concluído"],
-                            index=["Pendente", "Em Processamento", "Concluído"].index(detalhes['status']) if detalhes['status'] in ["Pendente", "Em Processamento", "Concluído"] else 0
-                        )
-                    with col_btn:
-                        if st.button("Atualizar Status", use_container_width=True):
-                            if not nome_usuario:
-                                st.error("Por favor, informe o nome do responsável!")
-                            else:
-                                try:
-                                    st.session_state['nome_usuario'] = nome_usuario
-                                    self.controller.atualizar_status_pedido(
-                                        pedido_selecionado,
-                                        novo_status,
-                                        nome_usuario
-                                    )
-                                    st.success("Status atualizado com sucesso!")
-                                    st.experimental_rerun()
-                                except Exception as e:
-                                    st.error(f"Erro ao atualizar status: {str(e)}")
+                                st.error(f"Erro ao atualizar status: {str(e)}")
 
                     # Observações
                     if detalhes['info'].get('Observacoes'):

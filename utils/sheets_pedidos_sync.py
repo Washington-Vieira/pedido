@@ -216,7 +216,7 @@ class SheetsPedidosSync:
             self.SPREADSHEET_URL = sheets_url
             self.save_config()
             st.success("✅ URL salva com sucesso!")
-            st.experimental_rerun()
+            st.rerun()
 
         # Status da conexão
         st.markdown("### Status da Conexão")

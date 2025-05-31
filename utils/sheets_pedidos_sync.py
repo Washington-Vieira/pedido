@@ -90,7 +90,7 @@ class SheetsPedidosSync:
 
             # Abrir a planilha pelo URL
             try:
-            sheet = self.client.open_by_url(self.SPREADSHEET_URL)
+                sheet = self.client.open_by_url(self.SPREADSHEET_URL)
             except Exception as e:
                 raise ValueError(f"Erro ao abrir planilha: {str(e)}")
 

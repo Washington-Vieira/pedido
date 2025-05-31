@@ -164,10 +164,10 @@ class PedidoHistoricoView:
                 
                 # Mostrar tabela dentro de um expander
                 with st.expander("Ver pedidos", expanded=True):
-                st.markdown(
-                    f'<div class="tabela-pedidos">{df_display.to_html(escape=False, index=False)}</div>',
-                    unsafe_allow_html=True
-                )
+                    st.markdown(
+                        f'<div class="tabela-pedidos">{df_display.to_html(escape=False, index=False)}</div>',
+                        unsafe_allow_html=True
+                    )
                 
                 # Detalhes do Pedido
                 st.markdown("### Detalhes do Pedido")
@@ -198,182 +198,130 @@ class PedidoHistoricoView:
                         # Botão de impressão simplificado
                         if st.button("🖨️", help="Imprimir pedido"):
                             try:
-                                self.imprimir_pedido(pedido_selecionado)
+                                self.controller.imprimir_pedido(pedido_selecionado)
+                                st.success("Pedido enviado para impressão!")
                             except Exception as e:
-                                st.error("Erro ao processar impressão")
+                                st.error(f"Erro ao imprimir pedido: {str(e)}")
                     
                     with col2:
-                        st.markdown("#### Item")
-                        for idx, item in enumerate(detalhes['itens'], 1):
-                            st.write(f"**CÓD Yazaki:** {item['cod_yazaki']}")
-                            st.write(f"**Código Cabo:** {item['codigo_cabo']}")
-                            st.write(f"**Seção:** {item['seccao']}")
-                            st.write(f"**Cor:** {item['cor']}")
-                            st.write(f"**Quantidade:** {item['quantidade']}")
-                    
-                    # Atualização de Status
-                    st.markdown("#### Atualizar Status")
-                    
-                    # Seleção de status
-                    novo_status = st.selectbox(
-                        "Novo Status",
-                        ["Pendente", "Em Processamento", "Concluído"],
-                        index=["Pendente", "Em Processamento", "Concluído"].index(detalhes['status'])
-                    )
-                    
-                    # Campo de responsável logo abaixo
-                    responsavel = st.text_input(
-                        "Responsável",
-                        value="",
-                        placeholder="Seu nome completo"
-                    )
-                    
-                    # Botão de confirmação centralizado
-                    col1, col2, col3 = st.columns([1, 2, 1])
-                    with col2:
-                        if st.button("✅ Confirmar Atualização", use_container_width=True):
-                            if not responsavel:
-                                st.error("⚠️ Por favor, informe o nome do responsável!")
-                            elif novo_status == detalhes['status']:
-                                st.warning("ℹ️ O status selecionado é igual ao atual.")
-                            else:
-                                try:
-                                    # Atualizar status e capturar o DataFrame atualizado
-                                    # A atualização do Sheets já acontece dentro do controller
-                                    df_pedidos_atualizado = self.controller.atualizar_status_pedido(
-                                        pedido_selecionado,
-                                        novo_status,
-                                        responsavel
-                                    )
-
-                                    # Atualizar o DataFrame localmente para re-renderizar a tabela
-                                    # Não precisamos de st.rerun() aqui, pois a interface será atualizada
-                                    # na próxima execução natural do script pelo Streamlit.
-                                    st.session_state['df_pedidos_historico'] = df_pedidos_atualizado
-                                    
-                                    # Mostrar mensagem de sucesso
-                                    st.success(f"✅ Status atualizado com sucesso para {novo_status}!")
-                                    
-                                except Exception as e:
-                                    st.error(f"❌ Erro ao atualizar status: {str(e)}")
-
-                    # Mostrar histórico de atualizações
-                    if detalhes['info'].get('Ultima_Atualizacao'):
-                        st.markdown("---")
-                        st.markdown("#### Última Atualização")
-                        st.info(
-                            f"🕒 {detalhes['info']['Ultima_Atualizacao']} por "
-                            f"{detalhes['info']['Responsavel_Atualizacao']}"
+                        st.markdown("#### Atualizar Status")
+                        novo_status = st.selectbox(
+                            "Novo Status",
+                            ["Pendente", "Em Processamento", "Concluído"],
+                            index=["Pendente", "Em Processamento", "Concluído"].index(detalhes['status']) if detalhes['status'] in ["Pendente", "Em Processamento", "Concluído"] else 0
                         )
+                        
+                        if st.button("Atualizar Status"):
+                            try:
+                                self.controller.atualizar_status_pedido(
+                                    pedido_selecionado,
+                                    novo_status,
+                                    st.session_state.get('nome_usuario', 'Sistema')
+                                )
+                                st.success("Status atualizado com sucesso!")
+                                st.experimental_rerun()
+                            except Exception as e:
+                                st.error(f"Erro ao atualizar status: {str(e)}")
+                    
+                    # Itens do pedido
+                    st.markdown("#### Itens do Pedido")
+                    if detalhes['itens']:
+                        df_itens = pd.DataFrame(detalhes['itens'])
+                        df_itens = df_itens[[
+                            'cod_yazaki', 'codigo_cabo', 'seccao', 'cor', 'quantidade'
+                        ]]
+                        df_itens.columns = [
+                            'CÓD Yazaki', 'Código Cabo', 'Seção', 'Cor', 'Quantidade'
+                        ]
+                        st.dataframe(df_itens)
+                    else:
+                        st.info("Nenhum item encontrado para este pedido.")
+                    
+                    # Observações
+                    if detalhes['info'].get('Observacoes'):
+                        st.markdown("#### Observações")
+                        st.write(detalhes['info']['Observacoes'])
             else:
-                st.info("Nenhum pedido encontrado")
-                
+                st.info("Nenhum pedido encontrado com os filtros selecionados.")
         except Exception as e:
-            st.error(f"""
-            ❌ Erro ao carregar histórico:
-            
-            {str(e)}
-            
-            Por favor, tente novamente ou contate o suporte.
-            """)
+            st.error(f"Erro ao carregar pedidos: {str(e)}")
 
     def formatar_pedido_para_impressao(self, pedido: dict) -> str:
-        """Formata o pedido para impressão"""
-        info = pedido["info"]
-        itens = pedido["itens"]
-        
+        """Formata os detalhes do pedido para impressão"""
         texto = f"""
-=================================================
-            PEDIDO DE REQUISIÇÃO
-=================================================
-Número: {info['Numero_Pedido']}
-Data: {info['Data']}
-Status: {pedido['status']}
-
-INFORMAÇÕES:
--------------------------------------------------
-Cliente: {info['Cliente']}
-RACK: {info['RACK']}
-Localização: {info['Localizacao']}
-Solicitante: {info['Solicitante']}
-
-OBSERVAÇÕES:
-{info['Observacoes']}
-
-ITENS:
--------------------------------------------------"""
-
-        for item in itens:
-            texto += f"""
-CÓD Yazaki: {item['cod_yazaki']}
-Código Cabo: {item['codigo_cabo']}
-Secção: {item['seccao']}
-Cor: {item['cor']}
-Quantidade: {item['quantidade']}
--------------------------------------------------"""
+        PEDIDO DE REQUISIÇÃO #{pedido['info']['Numero_Pedido']}
+        Data: {pedido['info']['Data']}
         
-        texto += "\n\n"
-        texto += "Assinatura: _____________________________\n"
-        texto += f"Impresso em: {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}"
+        INFORMAÇÕES DO PEDIDO
+        --------------------
+        Cliente: {pedido['info']['Cliente']}
+        RACK: {pedido['info']['RACK']}
+        Localização: {pedido['info']['Localizacao']}
+        Solicitante: {pedido['info']['Solicitante']}
+        Status: {pedido['status']}
+        
+        ITENS DO PEDIDO
+        --------------
+        """
+        
+        for idx, item in enumerate(pedido['itens'], 1):
+            texto += f"""
+        Item {idx}:
+        - CÓD Yazaki: {item['cod_yazaki']}
+        - Código Cabo: {item['codigo_cabo']}
+        - Seção: {item['seccao']}
+        - Cor: {item['cor']}
+        - Quantidade: {item['quantidade']}
+        """
+        
+        if pedido['info'].get('Observacoes'):
+            texto += f"""
+        OBSERVAÇÕES
+        ----------
+        {pedido['info']['Observacoes']}
+        """
         
         return texto
 
     def _criar_pdf(self, texto: str) -> str:
-        """Cria um arquivo PDF com o conteúdo do pedido em um diretório temporário."""
+        """Cria um arquivo PDF com o texto fornecido"""
         pdf = FPDF()
         pdf.add_page()
+        pdf.set_font("Arial", size=12)
         
-        # Usar fonte padrão
-        pdf.set_font('Helvetica', size=11)
+        # Dividir o texto em linhas
+        linhas = texto.split('\n')
         
-        # Adicionar texto
-        for linha in texto.split('\n'):
-            pdf.cell(0, 5, txt=linha, ln=True)
+        # Adicionar cada linha ao PDF
+        for linha in linhas:
+            pdf.cell(0, 10, txt=linha.strip(), ln=True)
         
-        # Salvar PDF em um diretório temporário acessível
-        nome_arquivo = f"pedido_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
+        # Salvar em arquivo temporário
+        temp_dir = tempfile.gettempdir()
+        temp_file = os.path.join(temp_dir, f"pedido_{int(time.time())}.pdf")
+        pdf.output(temp_file)
         
-        # Usar tempfile para criar um diretório temporário seguro
-        temp_dir = tempfile.mkdtemp()
-        caminho_pdf = os.path.join(temp_dir, nome_arquivo)
-            
-        pdf.output(caminho_pdf)
-        
-        # Retornar o caminho para o arquivo temporário e o diretório temporário para limpeza posterior
-        return caminho_pdf, temp_dir
+        return temp_file
 
     def imprimir_pedido(self, numero_pedido: str):
-        """Gera um PDF do pedido e oferece para download."""
-        temp_dir = None # Inicializa temp_dir fora do try
+        """Imprime um pedido"""
         try:
-            # Obter dados do pedido
-            pedido = self.controller.get_pedido_detalhes(numero_pedido)
-            texto = self.formatar_pedido_para_impressao(pedido)
+            # Buscar detalhes do pedido
+            detalhes = self.controller.get_pedido_detalhes(numero_pedido)
             
-            # Gerar PDF e obter o caminho do arquivo e do diretório temporário
-            caminho_pdf, temp_dir = self._criar_pdf(texto)
+            # Formatar texto
+            texto = self.formatar_pedido_para_impressao(detalhes)
             
-            # Mostrar link para download
-            if os.path.exists(caminho_pdf):
-                with open(caminho_pdf, 'rb') as f:
-                    pdf_bytes = f.read()
-                st.download_button(
-                    label="📥 Baixar PDF do Pedido",
-                    data=pdf_bytes,
-                    file_name=os.path.basename(caminho_pdf),
-                    mime="application/pdf"
-                )
-                # Exibir mensagem de sucesso apenas se o PDF foi gerado
-                st.success("PDF do pedido gerado com sucesso! Clique no botão acima para baixar.")
-            else:
-                st.error("Erro ao gerar PDF: arquivo não encontrado.")
+            # Criar PDF
+            pdf_file = self._criar_pdf(texto)
+            
+            # Imprimir usando o gerenciador de impressão
+            print_manager = PrintManager.get_instance()
+            print_manager.print_file(pdf_file)
+            
+            # Aguardar um pouco antes de remover o arquivo
+            time.sleep(5)
+            os.remove(pdf_file)
             
         except Exception as e:
-            st.error(f"Erro ao processar impressão: {str(e)}")
-        finally:
-            # Limpar o diretório temporário se ele foi criado
-            if temp_dir and os.path.exists(temp_dir):
-                try:
-                    shutil.rmtree(temp_dir)
-                except Exception as cleanup_error:
-                    st.warning(f"Aviso: Não foi possível limpar o diretório temporário {temp_dir}. Erro: {cleanup_error}") 
+            raise Exception(f"Erro ao imprimir pedido: {str(e)}") 

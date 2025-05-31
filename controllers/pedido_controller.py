@@ -8,6 +8,7 @@ import shutil
 from utils.sheets_pedidos_sync import SheetsPedidosSync
 import webbrowser
 import pathlib
+import base64
 
 class PedidoController:
     def __init__(self, caminho_planilha: str):
@@ -354,7 +355,7 @@ class PedidoController:
         return self.filtrar_dados(self.pedidos, cliente=cliente, rack=rack)
 
     def imprimir_pedido(self, numero_pedido: str):
-        """Gera um arquivo HTML do pedido para visualização e impressão"""
+        """Gera um arquivo HTML do pedido e exibe um link para visualização e impressão no navegador do usuário"""
         try:
             # Buscar detalhes do pedido
             detalhes = self.get_pedido_detalhes(numero_pedido)
@@ -365,13 +366,12 @@ class PedidoController:
             
             # Gerar caminho absoluto para o arquivo HTML
             temp_html = os.path.join(temp_dir, f"pedido_{numero_pedido}.html")
-            temp_html_path = pathlib.Path(temp_html).absolute()
             
             # Gerar HTML para impressão
             html = f"""
             <html>
             <head>
-                <meta charset="utf-8">
+                <meta charset=\"utf-8\">
                 <title>Pedido #{numero_pedido}</title>
                 <style>
                     body {{ 
@@ -456,13 +456,13 @@ class PedidoController:
                 </style>
             </head>
             <body>
-                <div class="container">
-                    <div class="header">
+                <div class=\"container\">
+                    <div class=\"header\">
                         <h1>Pedido de Requisição #{numero_pedido}</h1>
                         <p>Data: {detalhes['info']['Data']}</p>
                     </div>
                     
-                    <div class="info">
+                    <div class=\"info\">
                         <h2>Informações do Pedido</h2>
                         <p><strong>Cliente:</strong> {detalhes['info']['Cliente']}</p>
                         <p><strong>RACK:</strong> {detalhes['info']['RACK']}</p>
@@ -471,14 +471,14 @@ class PedidoController:
                         <p><strong>Status:</strong> {detalhes['status']}</p>
                     </div>
                     
-                    <div class="items">
+                    <div class=\"items\">
                         <h2>Itens</h2>
             """
             
             # Adicionar itens
             for idx, item in enumerate(detalhes['itens'], 1):
                 html += f"""
-                        <div class="item">
+                        <div class=\"item\">
                             <h3>Item {idx}</h3>
                             <p><strong>CÓD Yazaki:</strong> {item['cod_yazaki']}</p>
                             <p><strong>Código Cabo:</strong> {item['codigo_cabo']}</p>
@@ -492,36 +492,36 @@ class PedidoController:
             html += """
                     </div>
                     
-                    <div class="signatures">
+                    <div class=\"signatures\">
                         <div>
-                            <div class="signature-line"></div>
+                            <div class=\"signature-line\"></div>
                             <p>Solicitante</p>
                         </div>
                         
                         <div>
-                            <div class="signature-line"></div>
+                            <div class=\"signature-line\"></div>
                             <p>Aprovação</p>
                         </div>
                     </div>
                 </div>
-                <button onclick="window.print()" class="print-button">Imprimir Pedido</button>
+                <button onclick=\"window.print()\" class=\"print-button\">Imprimir Pedido</button>
             </body>
             </html>
             """
             
             # Salvar HTML temporário
-            with open(temp_html_path, "w", encoding="utf-8") as f:
+            with open(temp_html, "w", encoding="utf-8") as f:
                 f.write(html)
             
-            # Converter o caminho para URL format
-            file_url = pathlib.Path(temp_html_path).as_uri()
+            # Lê o HTML para base64
+            with open(temp_html, "rb") as f:
+                html_bytes = f.read()
+                b64 = base64.b64encode(html_bytes).decode()
             
-            # Abrir no navegador padrão
-            webbrowser.open(file_url, new=2)
-            
-            # Retornar sucesso
-            return True
-            
+            href = f'data:text/html;base64,{b64}'
+            st.markdown(
+                f'<a href="{href}" target="_blank" style="font-size:18px;color:#007bff;font-weight:bold;">🔗 Abrir comprovante do pedido em nova guia</a>',
+                unsafe_allow_html=True
+            )
         except Exception as e:
             st.error(f"Erro ao gerar comprovante do pedido: {str(e)}")
-            return False

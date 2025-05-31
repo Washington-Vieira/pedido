@@ -243,7 +243,10 @@ class PedidoHistoricoView:
                                 st.success("Status atualizado com sucesso!")
                                 st.rerun()
                             except Exception as e:
-                                st.error(f"Erro ao atualizar status: {str(e)}")
+                                if "experimental_rerun" in str(e):
+                                    st.error("Ocorreu um erro interno ao atualizar o status. Por favor, recarregue a página ou contate o suporte.")
+                                else:
+                                    st.error("Ocorreu um erro ao atualizar o status. Por favor, tente novamente ou contate o suporte.")
 
                     # Observações
                     if detalhes['info'].get('Observacoes'):

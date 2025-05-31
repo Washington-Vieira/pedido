@@ -164,10 +164,10 @@ class PedidoHistoricoView:
                 
                 # Mostrar tabela dentro de um expander
                 with st.expander("Ver pedidos", expanded=True):
-                    st.markdown(
-                        f'<div class="tabela-pedidos">{df_display.to_html(escape=False, index=False)}</div>',
-                        unsafe_allow_html=True
-                    )
+                st.markdown(
+                    f'<div class="tabela-pedidos">{df_display.to_html(escape=False, index=False)}</div>',
+                    unsafe_allow_html=True
+                )
                 
                 # Detalhes do Pedido
                 st.markdown("### Detalhes do Pedido")
@@ -250,10 +250,10 @@ class PedidoHistoricoView:
                                     # Não precisamos de st.rerun() aqui, pois a interface será atualizada
                                     # na próxima execução natural do script pelo Streamlit.
                                     st.session_state['df_pedidos_historico'] = df_pedidos_atualizado
-
+                                    
                                     # Mostrar mensagem de sucesso
                                     st.success(f"✅ Status atualizado com sucesso para {novo_status}!")
-
+                                    
                                 except Exception as e:
                                     st.error(f"❌ Erro ao atualizar status: {str(e)}")
 
@@ -322,14 +322,14 @@ Quantidade: {item['quantidade']}
         """Cria um arquivo PDF com o conteúdo do pedido em um diretório temporário."""
         pdf = FPDF()
         pdf.add_page()
-
+        
         # Usar fonte padrão
         pdf.set_font('Helvetica', size=11)
-
+        
         # Adicionar texto
         for linha in texto.split('\n'):
             pdf.cell(0, 5, txt=linha, ln=True)
-
+        
         # Salvar PDF em um diretório temporário acessível
         nome_arquivo = f"pedido_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
         
@@ -367,7 +367,7 @@ Quantidade: {item['quantidade']}
                 st.success("PDF do pedido gerado com sucesso! Clique no botão acima para baixar.")
             else:
                 st.error("Erro ao gerar PDF: arquivo não encontrado.")
-                
+            
         except Exception as e:
             st.error(f"Erro ao processar impressão: {str(e)}")
         finally:

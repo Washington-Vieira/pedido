@@ -354,19 +354,43 @@ class PedidoController:
         """Busca pedidos por cliente e rack (case-insensitive)"""
         return self.filtrar_dados(self.pedidos, cliente=cliente, rack=rack)
 
-    def imprimir_pedido(self, numero_pedido: str):
+    def imprimir_pedido(self, numero_pedido: str, view=None):
         """Gera um PDF do comprovante do pedido (layout texto) e retorna o link de download para o usuário"""
         try:
             # Buscar detalhes do pedido
             detalhes = self.get_pedido_detalhes(numero_pedido)
             if not detalhes:
                 return None
-            # Gerar texto do comprovante (layout simples)
-            if hasattr(self, 'formatar_pedido_para_impressao'):
-                texto = self.formatar_pedido_para_impressao(detalhes)
+
+            # Gerar texto do comprovante usando o método da view
+            if view and hasattr(view, 'formatar_pedido_para_impressao'):
+                texto = view.formatar_pedido_para_impressao(detalhes)
             else:
-                # fallback: texto básico
-                texto = f"Pedido: {numero_pedido}\n" + str(detalhes)
+                # Fallback: texto básico se a view não estiver disponível
+                texto = f"""
+                PEDIDO DE REQUISIÇÃO #{detalhes['info']['Numero_Pedido']}
+                Data: {detalhes['info']['Data']}
+                
+                INFORMAÇÕES DO PEDIDO
+                --------------------
+                Cliente: {detalhes['info']['Cliente']}
+                RACK: {detalhes['info']['RACK']}
+                Localização: {detalhes['info']['Localizacao']}
+                Solicitante: {detalhes['info']['Solicitante']}
+                Status: {detalhes['status']}
+                
+                ITENS DO PEDIDO
+                --------------
+                """
+                for idx, item in enumerate(detalhes['itens'], 1):
+                    texto += f"""
+                Item {idx}:
+                - CÓD Yazaki: {item['cod_yazaki']}
+                - Código Cabo: {item['codigo_cabo']}
+                - Seção: {item['seccao']}
+                - Cor: {item['cor']}
+                - Quantidade: {item['quantidade']}
+                """
 
             # Gerar PDF
             from fpdf import FPDF
@@ -378,8 +402,12 @@ class PedidoController:
             pdf = FPDF()
             pdf.add_page()
             pdf.set_font("Arial", size=12)
-            for linha in texto.split('\n'):
-                pdf.cell(0, 10, txt=linha.strip(), ln=True)
+            
+            # Ajustar o texto para remover espaços extras no início das linhas
+            linhas = [linha.strip() for linha in texto.split('\n')]
+            for linha in linhas:
+                if linha:  # Só adiciona linhas não vazias
+                    pdf.cell(0, 10, txt=linha, ln=True)
 
             # Salvar PDF temporário
             temp_dir = os.path.join(os.getcwd(), 'temp')
@@ -391,6 +419,7 @@ class PedidoController:
             with open(pdf_path, "rb") as f:
                 pdf_bytes = f.read()
                 b64 = base64.b64encode(pdf_bytes).decode()
+
             href = f'data:application/pdf;base64,{b64}'
             link_html = (
                 f'<a href="{href}" target="_blank" download="comprovante_{numero_pedido}.pdf" '
@@ -399,4 +428,5 @@ class PedidoController:
             )
             return link_html
         except Exception as e:
+            st.error(f"Erro ao gerar comprovante: {str(e)}")
             return None

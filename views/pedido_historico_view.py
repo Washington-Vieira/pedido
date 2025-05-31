@@ -241,7 +241,7 @@ class PedidoHistoricoView:
                                     nome_usuario
                                 )
                                 st.success("Status atualizado com sucesso!")
-                                st.experimental_rerun()
+                                st.rerun()
                             except Exception as e:
                                 st.error(f"Erro ao atualizar status: {str(e)}")
 

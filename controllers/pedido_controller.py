@@ -236,14 +236,24 @@ class PedidoController:
             raise Exception(f"Erro ao buscar pedidos: {str(e)}")
 
     def get_pedido_detalhes(self, numero_pedido: str) -> dict:
-        """Retorna os detalhes completos de um pedido, consultando apenas o Google Sheets."""
+        """Retorna os detalhes completos de um pedido, consultando apenas o Google Sheets, com cache e tratamento de quota."""
         try:
+            # Usar cache em session_state
+            cache_key = f"detalhes_pedido_{numero_pedido}"
+            if cache_key in st.session_state:
+                return st.session_state[cache_key]
             if not hasattr(self, 'sheets_sync') or not self.sheets_sync.client:
                 raise ValueError("Cliente do Google Sheets não configurado. Verifique as credenciais.")
-            
-            return self.sheets_sync.get_pedido_detalhes(numero_pedido)
+            detalhes = self.sheets_sync.get_pedido_detalhes(numero_pedido)
+            st.session_state[cache_key] = detalhes
+            return detalhes
         except Exception as e:
-            raise Exception(f"Erro ao buscar detalhes do pedido: {str(e)}")
+            if "Quota exceeded" in str(e) or "[429]" in str(e):
+                st.error("Limite de acesso. Aguarde um minuto e tente novamente.")
+                return {}
+            else:
+                st.error("Erro ao acessar os dados do pedido. Tente novamente ou contate o suporte.")
+                return {}
 
     def atualizar_status_pedido(self, numero_pedido: str, novo_status: str, responsavel: str):
         """Atualiza o status de um pedido localmente e no Google Sheets."""

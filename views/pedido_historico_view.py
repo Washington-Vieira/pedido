@@ -58,6 +58,13 @@ class PedidoHistoricoView:
                 box-shadow: 0 2px 4px rgba(0,0,0,0.1);
                 min-width: 180px;
                 flex: 1;
+                cursor: pointer;
+                transition: transform 0.2s, box-shadow 0.2s;
+            }
+            
+            .metric-card:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 8px rgba(0,0,0,0.2);
             }
             
             .metric-card.total {
@@ -119,6 +126,13 @@ class PedidoHistoricoView:
                 padding: 10px;
                 border-radius: 4px;
                 text-align: center;
+                cursor: pointer;
+                transition: transform 0.2s, box-shadow 0.2s;
+            }
+            
+            .cliente-metrica:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 8px rgba(0,0,0,0.2);
             }
 
             /* Tabela responsiva */
@@ -167,12 +181,32 @@ class PedidoHistoricoView:
                 }
             }
         </style>
+        
+        <script>
+            function filterDashboard(status, cliente) {
+                // Create a custom event with the filter parameters
+                const event = new CustomEvent('dashboardFilter', {
+                    detail: { status: status, cliente: cliente }
+                });
+                window.dispatchEvent(event);
+                
+                // Update Streamlit
+                window.parent.postMessage({
+                    type: "streamlit:setComponentValue",
+                    value: JSON.stringify({ status: status, cliente: cliente })
+                }, "*");
+            }
+        </script>
         """, unsafe_allow_html=True)
 
     def _mostrar_dashboard(self, df_pedidos: pd.DataFrame):
         """Mostra o dashboard gerencial com métricas"""
         if df_pedidos.empty:
             return
+
+        # Inicializar estado do filtro se não existir
+        if 'dashboard_filter' not in st.session_state:
+            st.session_state.dashboard_filter = {'status': None, 'cliente': None}
 
         # Calcular métricas gerais
         total_pedidos = len(df_pedidos)
@@ -185,36 +219,30 @@ class PedidoHistoricoView:
         ])
 
         # Mostrar cards com métricas gerais
-        st.markdown("""
+        st.markdown(f"""
         <div class="dashboard-container">
-            <div class="metric-card total">
+            <div class="metric-card total" onclick="filterDashboard('todos', null)">
                 <div class="metric-label">TOTAL PEDIDOS</div>
-                <div class="metric-value">{}</div>
+                <div class="metric-value">{total_pedidos}</div>
             </div>
-            <div class="metric-card concluido">
+            <div class="metric-card concluido" onclick="filterDashboard('Concluído', null)">
                 <div class="metric-label">CONCLUÍDO</div>
-                <div class="metric-value">{}</div>
+                <div class="metric-value">{total_concluido}</div>
             </div>
-            <div class="metric-card processando">
+            <div class="metric-card processando" onclick="filterDashboard('Em Processamento', null)">
                 <div class="metric-label">PROCESSO</div>
-                <div class="metric-value">{}</div>
+                <div class="metric-value">{total_processando}</div>
             </div>
-            <div class="metric-card pendente">
+            <div class="metric-card pendente" onclick="filterDashboard('Pendente', null)">
                 <div class="metric-label">PENDENTE</div>
-                <div class="metric-value">{}</div>
+                <div class="metric-value">{total_pendente}</div>
             </div>
-            <div class="metric-card urgente">
+            <div class="metric-card urgente" onclick="filterDashboard('urgente', null)">
                 <div class="metric-label">URGENTE</div>
-                <div class="metric-value">{}</div>
+                <div class="metric-value">{total_urgente_pendente}</div>
             </div>
         </div>
-        """.format(
-            total_pedidos,
-            total_concluido,
-            total_processando,
-            total_pendente,
-            total_urgente_pendente
-        ), unsafe_allow_html=True)
+        """, unsafe_allow_html=True)
 
         # Métricas por cliente
         clientes = df_pedidos['Cliente'].unique()
@@ -235,19 +263,23 @@ class PedidoHistoricoView:
             <div class="cliente-dashboard">
                 <div class="cliente-titulo">{cliente}</div>
                 <div class="cliente-metricas">
-                    <div class="cliente-metrica" style="background-color: #90EE90">
+                    <div class="cliente-metrica" style="background-color: #90EE90" 
+                         onclick="filterDashboard('Concluído', '{cliente}')">
                         <div class="metric-label">Concluído</div>
                         <div class="metric-value">{total_concluido}</div>
                     </div>
-                    <div class="cliente-metrica" style="background-color: #87CEEB">
+                    <div class="cliente-metrica" style="background-color: #87CEEB"
+                         onclick="filterDashboard('Em Processamento', '{cliente}')">
                         <div class="metric-label">Em Processo</div>
                         <div class="metric-value">{total_processando}</div>
                     </div>
-                    <div class="cliente-metrica" style="background-color: #ffd700">
+                    <div class="cliente-metrica" style="background-color: #ffd700"
+                         onclick="filterDashboard('Pendente', '{cliente}')">
                         <div class="metric-label">Pendente</div>
                         <div class="metric-value">{total_pendente}</div>
                     </div>
-                    <div class="cliente-metrica" style="background-color: #ff7f7f; color: white">
+                    <div class="cliente-metrica" style="background-color: #ff7f7f; color: white"
+                         onclick="filterDashboard('urgente', '{cliente}')">
                         <div class="metric-label">Urgente</div>
                         <div class="metric-value">{total_urgente}</div>
                     </div>
@@ -267,10 +299,11 @@ class PedidoHistoricoView:
             
             st.markdown("### 📋 Histórico de Pedidos")
             
-            # Filtro de Status
+            # Filtro de Status (agora controlado pelo dashboard também)
             status_filtro = st.selectbox(
                 "Status do Pedido",
-                ["Todos", "Pendente", "Concluído", "Em Processamento"]
+                ["Todos", "Pendente", "Concluído", "Em Processamento"],
+                key="status_filter"
             )
             
             # Filtro por Data
@@ -280,8 +313,23 @@ class PedidoHistoricoView:
             with col_data2:
                 data_final = st.date_input("Data final", value=None, key="filtro_data_final")
             
-            # Atualizar df_pedidos com os filtros
-            if status_filtro != "Todos":
+            # Aplicar filtros do dashboard
+            if 'dashboard_filter' in st.session_state:
+                dashboard_status = st.session_state.dashboard_filter.get('status')
+                dashboard_cliente = st.session_state.dashboard_filter.get('cliente')
+                
+                if dashboard_status == 'urgente':
+                    df_pedidos = df_pedidos[
+                        (df_pedidos['Status'] == 'Pendente') & 
+                        (df_pedidos['Urgente'].str.strip().str.lower() == 'sim')
+                    ]
+                elif dashboard_status and dashboard_status != 'todos':
+                    df_pedidos = df_pedidos[df_pedidos['Status'] == dashboard_status]
+                
+                if dashboard_cliente:
+                    df_pedidos = df_pedidos[df_pedidos['Cliente'] == dashboard_cliente]
+            # Aplicar filtros normais
+            elif status_filtro != "Todos":
                 df_pedidos = df_pedidos[df_pedidos["Status"] == status_filtro]
             
             # Aplicar filtro de data se selecionado
@@ -294,7 +342,7 @@ class PedidoHistoricoView:
                 df_pedidos = df_pedidos.drop(columns=["Data_dt"])
             
             if df_pedidos.empty:
-                st.warning("Por favor, recarregue a página e aguarde um minuto antes de tentar novamente.")
+                st.warning("Nenhum pedido encontrado com os filtros selecionados.")
                 return
             
             # Mostrar total de pedidos

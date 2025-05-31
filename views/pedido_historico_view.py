@@ -214,7 +214,7 @@ class PedidoHistoricoView:
                 # Botão de impressão
                 if st.button("🖨️ Imprimir", help="Imprimir pedido"):
                     try:
-                        link_html = self.controller.imprimir_pedido(pedido_selecionado)
+                        link_html = self.controller.imprimir_pedido(pedido_selecionado, view=self)
                         if link_html:
                             st.success("Pedido pronto para impressão! Clique no link abaixo para abrir o comprovante.")
                             st.markdown(link_html, unsafe_allow_html=True)
@@ -298,47 +298,4 @@ class PedidoHistoricoView:
         {pedido['info']['Observacoes']}
         """
         
-        return texto
-
-    def _criar_pdf(self, texto: str) -> str:
-        """Cria um arquivo PDF com o texto fornecido"""
-        pdf = FPDF()
-        pdf.add_page()
-        pdf.set_font("Arial", size=12)
-        
-        # Dividir o texto em linhas
-        linhas = texto.split('\n')
-        
-        # Adicionar cada linha ao PDF
-        for linha in linhas:
-            pdf.cell(0, 10, txt=linha.strip(), ln=True)
-        
-        # Salvar em arquivo temporário
-        temp_dir = tempfile.gettempdir()
-        temp_file = os.path.join(temp_dir, f"pedido_{int(time.time())}.pdf")
-        pdf.output(temp_file)
-        
-        return temp_file
-
-    def imprimir_pedido(self, numero_pedido: str):
-        """Imprime um pedido"""
-        try:
-            # Buscar detalhes do pedido
-            detalhes = self.controller.get_pedido_detalhes(numero_pedido)
-            
-            # Formatar texto
-            texto = self.formatar_pedido_para_impressao(detalhes)
-            
-            # Criar PDF
-            pdf_file = self._criar_pdf(texto)
-            
-            # Imprimir usando o gerenciador de impressão
-            print_manager = PrintManager.get_instance()
-            print_manager.print_file(pdf_file)
-            
-            # Aguardar um pouco antes de remover o arquivo
-            time.sleep(5)
-            os.remove(pdf_file)
-            
-        except Exception as e:
-            raise Exception(f"Erro ao imprimir pedido: {str(e)}") 
+        return texto 

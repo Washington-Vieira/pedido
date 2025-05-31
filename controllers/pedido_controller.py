@@ -355,173 +355,47 @@ class PedidoController:
         return self.filtrar_dados(self.pedidos, cliente=cliente, rack=rack)
 
     def imprimir_pedido(self, numero_pedido: str):
-        """Gera um arquivo HTML do pedido e retorna o link HTML para visualização e impressão no navegador do usuário"""
+        """Gera um PDF do comprovante do pedido (layout texto) e retorna o link de download para o usuário"""
         try:
             # Buscar detalhes do pedido
             detalhes = self.get_pedido_detalhes(numero_pedido)
-            
-            # Criar diretório temporário se não existir
+            if not detalhes:
+                return None
+            # Gerar texto do comprovante (layout simples)
+            if hasattr(self, 'formatar_pedido_para_impressao'):
+                texto = self.formatar_pedido_para_impressao(detalhes)
+            else:
+                # fallback: texto básico
+                texto = f"Pedido: {numero_pedido}\n" + str(detalhes)
+
+            # Gerar PDF
+            from fpdf import FPDF
+            import tempfile
+            import base64
+            import os
+            import time
+
+            pdf = FPDF()
+            pdf.add_page()
+            pdf.set_font("Arial", size=12)
+            for linha in texto.split('\n'):
+                pdf.cell(0, 10, txt=linha.strip(), ln=True)
+
+            # Salvar PDF temporário
             temp_dir = os.path.join(os.getcwd(), 'temp')
             os.makedirs(temp_dir, exist_ok=True)
-            
-            # Gerar caminho absoluto para o arquivo HTML
-            temp_html = os.path.join(temp_dir, f"pedido_{numero_pedido}.html")
-            
-            # Gerar HTML para impressão
-            html = f"""
-            <html>
-            <head>
-                <meta charset=\"utf-8\">
-                <title>Pedido #{numero_pedido}</title>
-                <style>
-                    body {{ 
-                        font-family: Arial, sans-serif;
-                        margin: 0;
-                        padding: 20px;
-                        background-color: #f5f5f5;
-                    }}
-                    .container {{
-                        max-width: 800px;
-                        margin: 0 auto;
-                        background-color: white;
-                        padding: 30px;
-                        border-radius: 8px;
-                        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-                    }}
-                    .header {{ 
-                        text-align: center;
-                        margin-bottom: 30px;
-                        padding-bottom: 20px;
-                        border-bottom: 2px solid #eee;
-                    }}
-                    .info {{ 
-                        margin-bottom: 30px;
-                        background-color: #f8f9fa;
-                        padding: 20px;
-                        border-radius: 6px;
-                    }}
-                    .item {{ 
-                        margin-bottom: 20px;
-                        padding: 15px;
-                        border: 1px solid #ddd;
-                        border-radius: 6px;
-                    }}
-                    .item h3 {{
-                        margin-top: 0;
-                        color: #2c3e50;
-                    }}
-                    .signatures {{ 
-                        margin-top: 50px;
-                        text-align: center;
-                        display: flex;
-                        justify-content: space-around;
-                        page-break-inside: avoid;
-                    }}
-                    .signature-line {{ 
-                        width: 200px; 
-                        border-top: 1px solid black; 
-                        margin: 50px auto 10px auto; 
-                    }}
-                    .print-button {{
-                        position: fixed;
-                        bottom: 20px;
-                        right: 20px;
-                        padding: 10px 20px;
-                        background-color: #007bff;
-                        color: white;
-                        border: none;
-                        border-radius: 5px;
-                        cursor: pointer;
-                        font-size: 16px;
-                        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-                    }}
-                    .print-button:hover {{
-                        background-color: #0056b3;
-                    }}
-                    @media print {{
-                        body {{ 
-                            background-color: white;
-                            margin: 0;
-                            padding: 0;
-                        }}
-                        .container {{
-                            box-shadow: none;
-                            padding: 0;
-                            max-width: 100%;
-                        }}
-                        .print-button {{
-                            display: none;
-                        }}
-                    }}
-                </style>
-            </head>
-            <body>
-                <div class=\"container\">
-                    <div class=\"header\">
-                        <h1>Pedido de Requisição #{numero_pedido}</h1>
-                        <p>Data: {detalhes['info']['Data']}</p>
-                    </div>
-                    
-                    <div class=\"info\">
-                        <h2>Informações do Pedido</h2>
-                        <p><strong>Cliente:</strong> {detalhes['info']['Cliente']}</p>
-                        <p><strong>RACK:</strong> {detalhes['info']['RACK']}</p>
-                        <p><strong>Localização:</strong> {detalhes['info']['Localizacao']}</p>
-                        <p><strong>Solicitante:</strong> {detalhes['info']['Solicitante']}</p>
-                        <p><strong>Status:</strong> {detalhes['status']}</p>
-                    </div>
-                    
-                    <div class=\"items\">
-                        <h2>Itens</h2>
-            """
-            
-            # Adicionar itens
-            for idx, item in enumerate(detalhes['itens'], 1):
-                html += f"""
-                        <div class=\"item\">
-                            <h3>Item {idx}</h3>
-                            <p><strong>CÓD Yazaki:</strong> {item['cod_yazaki']}</p>
-                            <p><strong>Código Cabo:</strong> {item['codigo_cabo']}</p>
-                            <p><strong>Seção:</strong> {item['seccao']}</p>
-                            <p><strong>Cor:</strong> {item['cor']}</p>
-                            <p><strong>Quantidade:</strong> {item['quantidade']}</p>
-                        </div>
-                """
-            
-            # Adicionar área de assinaturas e botão de impressão
-            html += """
-                    </div>
-                    
-                    <div class=\"signatures\">
-                        <div>
-                            <div class=\"signature-line\"></div>
-                            <p>Solicitante</p>
-                        </div>
-                        
-                        <div>
-                            <div class=\"signature-line\"></div>
-                            <p>Aprovação</p>
-                        </div>
-                    </div>
-                </div>
-                <button onclick=\"window.print()\" class=\"print-button\">Imprimir Pedido</button>
-            </body>
-            </html>
-            """
-            
-            # Salvar HTML temporário
-            with open(temp_html, "w", encoding="utf-8") as f:
-                f.write(html)
-            
-            # Lê o HTML para base64
-            with open(temp_html, "rb") as f:
-                html_bytes = f.read()
-                b64 = base64.b64encode(html_bytes).decode()
-            
-            href = f'data:text/html;base64,{b64}'
+            pdf_path = os.path.join(temp_dir, f"comprovante_{numero_pedido}_{int(time.time())}.pdf")
+            pdf.output(pdf_path)
+
+            # Ler PDF e gerar link base64
+            with open(pdf_path, "rb") as f:
+                pdf_bytes = f.read()
+                b64 = base64.b64encode(pdf_bytes).decode()
+            href = f'data:application/pdf;base64,{b64}'
             link_html = (
-                f'<a href="{href}" target="_blank" style="font-size:18px;color:#007bff;font-weight:bold;">'
-                '🔗 Abrir comprovante do pedido em nova guia</a>'
+                f'<a href="{href}" target="_blank" download="comprovante_{numero_pedido}.pdf" '
+                'style="font-size:18px;color:#007bff;font-weight:bold;">'
+                '🔗 Baixar comprovante em PDF</a>'
             )
             return link_html
         except Exception as e:

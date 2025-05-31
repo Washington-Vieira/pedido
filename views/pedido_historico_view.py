@@ -264,69 +264,41 @@ class PedidoHistoricoView:
                 st.warning("Não foi possível carregar os pedidos. Por favor, tente novamente em alguns instantes.")
 
     def formatar_pedido_para_impressao(self, pedido: dict) -> str:
-        """Formata os detalhes do pedido para impressão em formato de comprovante fiscal"""
-        # Definir largura do comprovante
-        largura = 40
-        linha = "-" * largura
+        """Formata os detalhes do pedido para impressão"""
+        info = pedido['info']
+        itens = pedido['itens']
         
-        # Cabeçalho
-        texto = f"""
-{"REQUISIÇÃO DE BOBINA":^{largura}}
-{linha}
-{"COMPROVANTE DE PEDIDO":^{largura}}
-{linha}
+        texto = f"""=================================================
+            PEDIDO DE REQUISIÇÃO
+=================================================
+Número: {info['Numero_Pedido']}
+Data: {info['Data']}
+Status: {pedido['status']}
 
-PEDIDO Nº: {pedido['info']['Numero_Pedido']}
-DATA/HORA: {pedido['info']['Data']}
-{linha}
-
-INFORMAÇÕES DO PEDIDO:
-CLIENTE: {pedido['info']['Cliente']}
-RACK: {pedido['info']['RACK']}
-LOCAL.: {pedido['info']['Localizacao']}
-SOLIC.: {pedido['info']['Solicitante']}
-STATUS: {pedido['status']}
-{linha}
-
-ITENS DO PEDIDO:"""
-
-        # Adicionar itens
-        total_itens = 0
-        for idx, item in enumerate(pedido['itens'], 1):
-            texto += f"""
-
-ITEM {idx:02d}
-COD.YAZAKI: {item['cod_yazaki']}
-COD.CABO..: {item['codigo_cabo']}
-SEÇÃO.....: {item['seccao']}
-COR.......: {item['cor']}
-QTDE......: {item['quantidade']}
-{"-" * (largura-10)}"""
-            total_itens += item['quantidade']
-
-        # Adicionar total e observações
-        texto += f"""
-
-{linha}
-TOTAL DE ITENS: {total_itens}
-{linha}"""
-
-        # Adicionar observações se houver
-        if pedido['info'].get('Observacoes'):
-            texto += f"""
+INFORMAÇÕES:
+-------------------------------------------------
+Cliente: {info['Cliente']}
+RACK: {info['RACK']}
+Localização: {info['Localizacao']}
+Solicitante: {info['Solicitante']}
 
 OBSERVAÇÕES:
-{pedido['info']['Observacoes']}
-{linha}"""
+{info['Observacoes']}
 
-        # Adicionar rodapé
-        texto += f"""
+ITENS:
+-------------------------------------------------"""
 
-{"MANTENHA ESTE COMPROVANTE":^{largura}}
-{"PARA CONTROLE":^{largura}}
-
-{datetime.now().strftime('%d/%m/%Y %H:%M:%S'):^{largura}}
-{"." * largura}
-"""
+        for item in itens:
+            texto += f"""
+CÓD Yazaki: {item['cod_yazaki']}
+Código Cabo: {item['codigo_cabo']}
+Secção: {item['seccao']}
+Cor: {item['cor']}
+Quantidade: {item['quantidade']}
+-------------------------------------------------"""
+        
+        texto += "\n\n"
+        texto += "Assinatura: _____________________________\n"
+        texto += f"Impresso em: {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}"
         
         return texto 

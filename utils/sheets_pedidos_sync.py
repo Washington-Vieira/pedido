@@ -248,6 +248,21 @@ class SheetsPedidosSync:
                             st.error(message)
                 else:
                     st.error("Arquivo de mapeamento não encontrado!")
+
+            # NOVO: Importação manual de XLSX para aba Projeto
+            st.markdown("### Importar Localizações (sobrescreve aba Projeto no Google Sheets)")
+            arquivo_xlsx = st.file_uploader("Selecione o arquivo XLSX com a aba 'Projeto'", type=["xlsx"])
+            if arquivo_xlsx is not None:
+                temp_path = "temp_import_projeto.xlsx"
+                with open(temp_path, "wb") as f:
+                    f.write(arquivo_xlsx.read())
+                if st.button("Importar e Atualizar Google Sheets"):
+                    with st.spinner("Importando e atualizando..."):
+                        success, message = self.sincronizar_mapeamento(temp_path)
+                        if success:
+                            st.success("Localizações atualizadas com sucesso no Google Sheets!")
+                        else:
+                            st.error(f"Erro ao atualizar: {message}")
         else:
             st.error("❌ Não conectado ao Google Sheets")
             st.info("Configure as credenciais nas configurações para conectar.")

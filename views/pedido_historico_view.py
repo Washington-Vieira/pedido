@@ -290,48 +290,25 @@ class PedidoHistoricoView:
     def mostrar_interface(self):
         """Mostra a interface do histórico de pedidos"""
         try:
-            # Buscar pedidos primeiro para o dashboard
-            df_pedidos = self.controller.buscar_pedidos(status=None)  # Buscar todos os pedidos para o dashboard
-            
-            if not df_pedidos.empty:
-                # Mostrar dashboard no topo
-                self._mostrar_dashboard(df_pedidos)
-            
             st.markdown("### 📋 Histórico de Pedidos")
-            
-            # Filtro de Status (agora controlado pelo dashboard também)
+
+            # Filtro de Status
             status_filtro = st.selectbox(
                 "Status do Pedido",
                 ["Todos", "Pendente", "Concluído", "Em Processamento"],
                 key="status_filter"
             )
-            
+
             # Filtro por Data
             col_data1, col_data2 = st.columns(2)
             with col_data1:
                 data_inicial = st.date_input("Data inicial", value=None, key="filtro_data_inicial")
             with col_data2:
                 data_final = st.date_input("Data final", value=None, key="filtro_data_final")
-            
-            # Aplicar filtros do dashboard
-            if 'dashboard_filter' in st.session_state:
-                dashboard_status = st.session_state.dashboard_filter.get('status')
-                dashboard_cliente = st.session_state.dashboard_filter.get('cliente')
-                
-                if dashboard_status == 'urgente':
-                    df_pedidos = df_pedidos[
-                        (df_pedidos['Status'] == 'Pendente') & 
-                        (df_pedidos['Urgente'].str.strip().str.lower() == 'sim')
-                    ]
-                elif dashboard_status and dashboard_status != 'todos':
-                    df_pedidos = df_pedidos[df_pedidos['Status'] == dashboard_status]
-                
-                if dashboard_cliente:
-                    df_pedidos = df_pedidos[df_pedidos['Cliente'] == dashboard_cliente]
-            # Aplicar filtros normais
-            elif status_filtro != "Todos":
-                df_pedidos = self.controller.buscar_pedidos(status=status_filtro if status_filtro != "Todos" else None)
-            
+
+            # Buscar pedidos já filtrando pelo status selecionado
+            df_pedidos = self.controller.buscar_pedidos(status=status_filtro if status_filtro != "Todos" else None)
+
             # Aplicar filtro de data se selecionado
             if not df_pedidos.empty and (data_inicial or data_final):
                 df_pedidos["Data_dt"] = pd.to_datetime(df_pedidos["Data"], format="%d/%m/%Y %H:%M", errors="coerce")
@@ -340,28 +317,28 @@ class PedidoHistoricoView:
                 if data_final:
                     df_pedidos = df_pedidos[df_pedidos["Data_dt"] <= pd.to_datetime(data_final) + pd.Timedelta(days=1)]
                 df_pedidos = df_pedidos.drop(columns=["Data_dt"])
-            
+
             if df_pedidos.empty:
                 st.warning("Nenhum pedido encontrado com os filtros selecionados.")
                 return
-            
+
             # Mostrar total de pedidos
             st.write(f"Total: {len(df_pedidos)} pedidos encontrados")
-            
+
             # Formatar DataFrame para exibição
             df_display = df_pedidos[[
                 "Numero_Pedido", "Data", "Cliente", "RACK", 
                 "Localizacao", "Solicitante", "Urgente", "Status",
                 "Ultima_Atualizacao", "Responsavel_Atualizacao"
             ]].copy()
-            
+
             # Renomear colunas
             df_display.columns = [
                 "Número", "Data", "Cliente", "RACK",
                 "Localização", "Solicitante", "Urgente", "Status",
                 "Última Atualização", "Responsável"
             ]
-            
+
             # Formatar status com cores
             def formatar_status(status):
                 cores = {
@@ -371,38 +348,38 @@ class PedidoHistoricoView:
                 }
                 classe = cores.get(status, "")
                 return f'<span class="{classe}">{status}</span>'
-            
+
             df_display["Status"] = df_display["Status"].apply(formatar_status)
-            
+
             # Formatar urgente com cores
             def formatar_urgente(urgente):
                 if urgente.strip().lower() == "sim":
                     return '<span style="color:white;background-color:#d9534f;font-weight:bold;padding:2px 8px;border-radius:4px;">URGENTE</span>'
                 else:
                     return '<span style="color:#222;background-color:#eee;padding:2px 8px;border-radius:4px;">Não</span>'
-            
+
             df_display["Urgente"] = df_display["Urgente"].apply(formatar_urgente)
-            
+
             # Mostrar tabela dentro de um expander
             with st.expander("Ver pedidos", expanded=True):
                 st.markdown(
                     f'<div class="tabela-pedidos">{df_display.to_html(escape=False, index=False)}</div>',
                     unsafe_allow_html=True
                 )
-            
+
             # Detalhes do Pedido
             st.markdown("### Detalhes do Pedido")
-            
+
             # Seleção do pedido
             pedido_selecionado = st.selectbox(
                 "Selecione um pedido",
                 [""] + df_pedidos["Numero_Pedido"].tolist()
             )
-            
+
             if pedido_selecionado:
                 # Buscar detalhes do pedido
                 detalhes = self.controller.get_pedido_detalhes(pedido_selecionado)
-                
+
                 # Informações e Itens do Pedido lado a lado
                 col_info, col_itens = st.columns(2)
                 with col_info:

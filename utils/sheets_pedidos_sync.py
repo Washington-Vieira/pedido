@@ -293,8 +293,8 @@ class SheetsPedidosSync:
                 st.warning("Por favor, recarregue a página e aguarde um minuto antes de tentar novamente.")
             return {}
 
-    def atualizar_status_pedido_sheets(self, numero_pedido: str, novo_status: str, ultima_atualizacao: str, responsavel: str) -> tuple[bool, str]:
-        """Atualiza o status de um pedido diretamente no Google Sheets."""
+    def atualizar_status_pedido_sheets(self, numero_pedido: str, novo_status: str, ultima_atualizacao: str, responsavel: str, urgente_para_concluido_urgente: bool = False) -> tuple[bool, str]:
+        """Atualiza o status de um pedido diretamente no Google Sheets. Se urgente_para_concluido_urgente=True, também atualiza o campo 'Urgente'."""
         try:
             if not self.client:
                 return False, "Cliente do Google Sheets não configurado."
@@ -317,6 +317,7 @@ class SheetsPedidosSync:
                 status_col_index = headers.index("Status") + 1
                 ultima_atualizacao_col_index = headers.index("Ultima_Atualizacao") + 1
                 responsavel_col_index = headers.index("Responsavel_Atualizacao") + 1
+                urgente_col_index = headers.index("Urgente") + 1 if urgente_para_concluido_urgente else None
             except ValueError as e:
                 return False, f"Colunas necessárias não encontradas na aba Pedidos: {e}"
 
@@ -324,6 +325,8 @@ class SheetsPedidosSync:
             ws_pedidos.update_cell(row_index, status_col_index, novo_status)
             ws_pedidos.update_cell(row_index, ultima_atualizacao_col_index, ultima_atualizacao)
             ws_pedidos.update_cell(row_index, responsavel_col_index, responsavel)
+            if urgente_para_concluido_urgente and urgente_col_index:
+                ws_pedidos.update_cell(row_index, urgente_col_index, "Concluido Urgente")
 
             return True, "Status atualizado com sucesso no Google Sheets!"
         except Exception as e:

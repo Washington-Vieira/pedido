@@ -301,6 +301,13 @@ class PedidoController:
             df_pedidos.loc[idx, 'Ultima_Atualizacao'] = ultima_atualizacao
             df_pedidos.loc[idx, 'Responsavel_Atualizacao'] = responsavel
 
+            # Se for urgente e concluído, atualizar campo Urgente
+            urgente_original = str(df_pedidos.loc[idx, 'Urgente']).strip().lower()
+            urgente_foi_concluido = False
+            if novo_status == 'Concluído' and urgente_original == 'sim':
+                df_pedidos.loc[idx, 'Urgente'] = 'Concluido Urgente'
+                urgente_foi_concluido = True
+
             # Fazer backup antes de salvar localmente
             self._fazer_backup()
 
@@ -309,12 +316,13 @@ class PedidoController:
                 df_pedidos.to_excel(writer, sheet_name='Pedidos', index=False)
                 df_itens.to_excel(writer, sheet_name='Itens', index=False)
 
-            # Atualizar apenas o status no Google Sheets
-            success_sheets, message_sheets = self.sheets_sync.atualizar_status_pedido_sheets(
+            # Atualizar status (e urgente se necessário) no Google Sheets
+            self.sheets_sync.atualizar_status_pedido_sheets(
                 numero_pedido=numero_pedido,
                 novo_status=novo_status,
                 ultima_atualizacao=ultima_atualizacao,
-                responsavel=responsavel
+                responsavel=responsavel,
+                urgente_para_concluido_urgente=urgente_foi_concluido
             )
 
             # Limpar cache após atualização

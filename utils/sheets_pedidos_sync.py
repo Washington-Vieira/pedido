@@ -9,9 +9,11 @@ from oauth2client.service_account import ServiceAccountCredentials
 
 class SheetsPedidosSync:
     def __init__(self):
-        # URL da planilha do Google Sheets (você pode alterar isso nas configurações)
         self.config_file = "config.json"
+        # Prioriza o link do secrets do Streamlit
         self.SPREADSHEET_URL = None
+        if hasattr(st, 'secrets') and 'sheets_url' in st.secrets:
+            self.SPREADSHEET_URL = st.secrets['sheets_url']
         self.client = None
         self.load_config()
         self.initialize_client()
@@ -22,18 +24,22 @@ class SheetsPedidosSync:
             if os.path.exists(self.config_file):
                 with open(self.config_file, 'r') as f:
                     self.config = json.load(f)
-                    self.SPREADSHEET_URL = self.config.get('sheets_url', '')
+                    # Só sobrescreve se não veio do secrets
+                    if not self.SPREADSHEET_URL:
+                        self.SPREADSHEET_URL = self.config.get('sheets_url', '')
             else:
                 self.config = {
                     'sheets_credentials': None,
                     'sheets_url': ''
                 }
-                self.SPREADSHEET_URL = self.config['sheets_url']
+                if not self.SPREADSHEET_URL:
+                    self.SPREADSHEET_URL = self.config['sheets_url']
                 self.save_config()
         except Exception as e:
             st.error(f"Erro ao carregar configurações: {str(e)}")
             self.config = {'sheets_credentials': None}
-            self.SPREADSHEET_URL = ''
+            if not self.SPREADSHEET_URL:
+                self.SPREADSHEET_URL = ''
 
     def save_config(self):
         """Salva configuração atual"""

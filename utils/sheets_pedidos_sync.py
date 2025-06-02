@@ -251,18 +251,21 @@ class SheetsPedidosSync:
 
             # NOVO: Importação manual de XLSX para aba Projeto
             st.markdown("### Importar Localizações (sobrescreve aba Projeto no Google Sheets)")
-            arquivo_xlsx = st.file_uploader("Selecione o arquivo XLSX com a aba 'Projeto'", type=["xlsx"])
-            if arquivo_xlsx is not None:
-                temp_path = "temp_import_projeto.xlsx"
-                with open(temp_path, "wb") as f:
-                    f.write(arquivo_xlsx.read())
-                if st.button("Importar e Atualizar Google Sheets"):
+            arquivo_xlsx = st.file_uploader("Selecione o arquivo XLSX com a aba 'Projeto'", type=["xlsx"], key="importar_xlsx")
+            importar_btn = st.button("Importar e Atualizar Google Sheets", key="importar_btn")
+            if importar_btn:
+                if arquivo_xlsx is not None:
+                    temp_path = "temp_import_projeto.xlsx"
+                    with open(temp_path, "wb") as f:
+                        f.write(arquivo_xlsx.read())
                     with st.spinner("Importando e atualizando..."):
                         success, message = self.sincronizar_mapeamento(temp_path)
                         if success:
                             st.success("Localizações atualizadas com sucesso no Google Sheets!")
                         else:
                             st.error(f"Erro ao atualizar: {message}")
+                else:
+                    st.warning("Por favor, selecione um arquivo XLSX antes de importar.")
         else:
             st.error("❌ Não conectado ao Google Sheets")
             st.info("Configure as credenciais nas configurações para conectar.")

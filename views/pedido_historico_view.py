@@ -1,4 +1,4 @@
-import streamlit as st
+import streamlit as stMore actions
 from controllers.pedido_controller import PedidoController
 from datetime import datetime
 import pandas as pd
@@ -248,7 +248,7 @@ class PedidoHistoricoView:
         clientes = df_pedidos['Cliente'].unique()
         for cliente in sorted(clientes):
             df_cliente = df_pedidos[df_pedidos['Cliente'] == cliente]
-            
+
             # Calcular métricas do cliente
             total_concluido = len(df_cliente[df_cliente['Status'] == 'Concluído'])
             total_processando = len(df_cliente[df_cliente['Status'] == 'Em Processamento'])
@@ -257,7 +257,7 @@ class PedidoHistoricoView:
                 (df_cliente['Status'] == 'Pendente') & 
                 (df_cliente['Urgente'].str.strip().str.lower() == 'sim')
             ])
-            
+
             # Mostrar métricas do cliente
             st.markdown(f"""
             <div class="cliente-dashboard">
@@ -292,70 +292,104 @@ class PedidoHistoricoView:
         try:
             # Buscar pedidos primeiro para o dashboard
             df_pedidos = self.controller.buscar_pedidos(status=None)  # Buscar todos os pedidos para o dashboard
-            
+
             if not df_pedidos.empty:
                 # Mostrar dashboard no topo
                 self._mostrar_dashboard(df_pedidos)
-            
+
             st.markdown("### 📋 Histórico de Pedidos")
-            
-            # Filtro de Status
+
+            # Filtro de Status (agora controlado pelo dashboard também)
             status_filtro = st.selectbox(
                 "Status do Pedido",
-                ["Todos", "Pendente", "Em Processamento", "Concluído"],
+                ["Todos", "Pendente", "Concluído", "Em Processamento"],
                 key="status_filter"
             )
-            
+
             # Filtro por Data
             col_data1, col_data2 = st.columns(2)
             with col_data1:
                 data_inicial = st.date_input("Data inicial", value=None, key="filtro_data_inicial")
             with col_data2:
                 data_final = st.date_input("Data final", value=None, key="filtro_data_final")
-            
-            # Aplicar filtros
+
+            # Aplicar filtros do dashboard
+            # Aplicar filtros do dashboard e manter o DataFrame filtrado
             df_filtrado = df_pedidos.copy()
             filtro_aplicado = False
             
-            # Aplicar filtro de status
-            if status_filtro != "Todos":
+            if 'dashboard_filter' in st.session_state:
+                dashboard_status = st.session_state.dashboard_filter.get('status')
+                dashboard_cliente = st.session_state.dashboard_filter.get('cliente')
+
+                if dashboard_status == 'urgente':
+                    df_pedidos = df_pedidos[
+                        (df_pedidos['Status'] == 'Pendente') & 
+                        (df_pedidos['Urgente'].str.strip().str.lower() == 'sim')
+                    df_filtrado = df_filtrado[
+                        (df_filtrado['Status'] == 'Pendente') & 
+                        (df_filtrado['Urgente'].str.strip().str.lower() == 'sim')
+                    ]
+                    filtro_aplicado = True
+                elif dashboard_status and dashboard_status != 'todos':
+                    df_pedidos = df_pedidos[df_pedidos['Status'] == dashboard_status]
+                    df_filtrado = df_filtrado[df_filtrado['Status'] == dashboard_status]
+                    filtro_aplicado = True
+
+                if dashboard_cliente:
+                    df_pedidos = df_pedidos[df_pedidos['Cliente'] == dashboard_cliente]
+            # Aplicar filtros normais
+                    df_filtrado = df_filtrado[df_filtrado['Cliente'] == dashboard_cliente]
+                    filtro_aplicado = True
+            # Aplicar filtros normais se não houver filtro do dashboard
+            elif status_filtro != "Todos":
+                df_pedidos = df_pedidos[df_pedidos["Status"] == status_filtro]
                 df_filtrado = df_filtrado[df_filtrado["Status"] == status_filtro]
                 filtro_aplicado = True
-            
+
             # Aplicar filtro de data se selecionado
+            if not df_pedidos.empty and (data_inicial or data_final):
+                df_pedidos["Data_dt"] = pd.to_datetime(df_pedidos["Data"], format="%d/%m/%Y %H:%M", errors="coerce")
             if not df_filtrado.empty and (data_inicial or data_final):
                 df_filtrado["Data_dt"] = pd.to_datetime(df_filtrado["Data"], format="%d/%m/%Y %H:%M", errors="coerce")
                 if data_inicial:
+                    df_pedidos = df_pedidos[df_pedidos["Data_dt"] >= pd.to_datetime(data_inicial)]
                     df_filtrado = df_filtrado[df_filtrado["Data_dt"] >= pd.to_datetime(data_inicial)]
                 if data_final:
+                    df_pedidos = df_pedidos[df_pedidos["Data_dt"] <= pd.to_datetime(data_final) + pd.Timedelta(days=1)]
+                df_pedidos = df_pedidos.drop(columns=["Data_dt"])
                     df_filtrado = df_filtrado[df_filtrado["Data_dt"] <= pd.to_datetime(data_final) + pd.Timedelta(days=1)]
                 df_filtrado = df_filtrado.drop(columns=["Data_dt"])
                 filtro_aplicado = True
-            
+
+            if df_pedidos.empty:
             if df_filtrado.empty:
                 st.warning("Nenhum pedido encontrado com os filtros selecionados.")
                 return
-            
+
+            # Mostrar total de pedidos
+            st.write(f"Total: {len(df_pedidos)} pedidos encontrados")
             # Mostrar total de pedidos encontrados com os filtros
             if filtro_aplicado:
                 st.success(f"🔍 {len(df_filtrado)} pedidos encontrados com os filtros aplicados")
             else:
                 st.write(f"Total: {len(df_filtrado)} pedidos")
-            
+
             # Formatar DataFrame para exibição
+            df_display = df_pedidos[[
             df_display = df_filtrado[[
                 "Numero_Pedido", "Data", "Cliente", "RACK", 
                 "Localizacao", "Solicitante", "Urgente", "Status",
                 "Ultima_Atualizacao", "Responsavel_Atualizacao"
             ]].copy()
-            
+
             # Renomear colunas
             df_display.columns = [
                 "Número", "Data", "Cliente", "RACK",
                 "Localização", "Solicitante", "Urgente", "Status",
                 "Última Atualização", "Responsável"
             ]
-            
+
             # Formatar status com cores
             def formatar_status(status):
                 cores = {
@@ -365,28 +399,29 @@ class PedidoHistoricoView:
                 }
                 classe = cores.get(status, "")
                 return f'<span class="{classe}">{status}</span>'
-            
+
             df_display["Status"] = df_display["Status"].apply(formatar_status)
-            
+
             # Formatar urgente com cores
             def formatar_urgente(urgente):
                 if urgente.strip().lower() == "sim":
                     return '<span style="color:white;background-color:#d9534f;font-weight:bold;padding:2px 8px;border-radius:4px;">URGENTE</span>'
                 else:
                     return '<span style="color:#222;background-color:#eee;padding:2px 8px;border-radius:4px;">Não</span>'
-            
+
             df_display["Urgente"] = df_display["Urgente"].apply(formatar_urgente)
-            
+
             # Mostrar tabela dentro de um expander
             with st.expander("Ver pedidos", expanded=True):
                 st.markdown(
                     f'<div class="tabela-pedidos">{df_display.to_html(escape=False, index=False)}</div>',
                     unsafe_allow_html=True
                 )
-            
+
             # Detalhes do Pedido
             st.markdown("### Detalhes do Pedido")
-            
+
+            # Seleção do pedido
             # Seleção do pedido (agora usando o DataFrame filtrado)
             pedidos_filtrados = df_filtrado["Numero_Pedido"].tolist()
             
@@ -396,14 +431,15 @@ class PedidoHistoricoView:
             
             pedido_selecionado = st.selectbox(
                 "Selecione um pedido",
+                [""] + df_pedidos["Numero_Pedido"].tolist()
                 [""] + pedidos_filtrados,
                 key="pedido_selecionado"
             )
-            
+
             if pedido_selecionado:
                 # Buscar detalhes do pedido
                 detalhes = self.controller.get_pedido_detalhes(pedido_selecionado)
-                
+
                 # Informações e Itens do Pedido lado a lado
                 col_info, col_itens = st.columns(2)
                 with col_info:
@@ -414,6 +450,7 @@ class PedidoHistoricoView:
                     st.write(f"**RACK:** {detalhes['info']['RACK']}")
                     st.write(f"**Localização:** {detalhes['info']['Localizacao']}")
                     st.write(f"**Solicitante:** {detalhes['info']['Solicitante']}")
+                    st.write(f"**Status:** {detalhes['status']}")
                     
                     # Formatar status com cor
                     status_html = formatar_status(detalhes['status'])
@@ -477,23 +514,24 @@ class PedidoHistoricoView:
                             st.success("Status atualizado com sucesso!")
                             st.rerun()
                         except Exception as e:
-                            st.error(f"Erro ao atualizar status: {str(e)}")
+                            pass  # Não exibe nenhuma mensagem de erro para o usuário
 
                 # Observações
                 if detalhes['info'].get('Observacoes'):
                     st.markdown("---")
                     st.markdown("#### Observações")
                     st.write(detalhes['info']['Observacoes'])
-
         except Exception as e:
-            st.error(f"Erro ao carregar pedidos: {str(e)}")
-            print(f"Erro detalhado: {str(e)}")  # Para debug 
+            if "Quota exceeded" in str(e) or "[429]" in str(e):
+                st.warning("Por favor, recarregue a página e aguarde um minuto antes de tentar novamente.")
+            else:
+                st.warning("Não foi possível carregar os pedidos. Por favor, tente novamente em alguns instantes.")
 
     def formatar_pedido_para_impressao(self, pedido: dict) -> str:
         """Formata os detalhes do pedido para impressão"""
         info = pedido['info']
         itens = pedido['itens']
-        
+
         texto = f"""=================================================
             PEDIDO DE REQUISIÇÃO
 =================================================
@@ -522,9 +560,7 @@ Secção: {item['seccao']}
 Cor: {item['cor']}
 Quantidade: {item['quantidade']}
 -------------------------------------------------"""
-        
+
         texto += "\n\n"
         texto += "Assinatura: _____________________________\n"
         texto += f"Impresso em: {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}"
-        
-        return texto 

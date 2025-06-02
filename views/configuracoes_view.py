@@ -63,6 +63,20 @@ class ConfiguracoesView:
     def _mostrar_config_sheets(self):
         self.sheets_sync.render_config_page()
 
+        st.markdown("### Importar Localizações (sobrescreve aba Projeto no Google Sheets)")
+        arquivo_xlsx = st.file_uploader("Selecione o arquivo XLSX com a aba 'Projeto'", type=["xlsx"])
+        if arquivo_xlsx is not None:
+            temp_path = "temp_import_projeto.xlsx"
+            with open(temp_path, "wb") as f:
+                f.write(arquivo_xlsx.read())
+            if st.button("Importar e Atualizar Google Sheets"):
+                with st.spinner("Importando e atualizando..."):
+                    success, message = self.sheets_sync.sincronizar_mapeamento(temp_path)
+                    if success:
+                        st.success("Localizações atualizadas com sucesso no Google Sheets!")
+                    else:
+                        st.error(f"Erro ao atualizar: {message}")
+
     def _mostrar_backups(self):
         # Mostrar backups disponíveis
         st.markdown("#### 💾 Backups Disponíveis")

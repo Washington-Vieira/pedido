@@ -165,7 +165,7 @@ def main():
             pedido_view.mostrar_interface()
         elif "Histórico" in st.session_state.menu_atual:
             # O dashboard gerencial é exibido apenas por esta função para facilitar manutenção e evitar duplicidade de lógica.
-            st.markdown("## 📊 Dashboard Gerencial")
+            st.markdown("## Resumo Pedidos")
             mostrar_dashboard_gerencial(pedido_controller)
             historico_view.mostrar_interface()
         else:

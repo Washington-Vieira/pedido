@@ -26,9 +26,7 @@ class PedidoController:
         # Criar diretório de backup se não existir
         os.makedirs(self.diretorio_backup, exist_ok=True)
 
-    @staticmethod
-    @st.cache_data
-    def _carregar_planilha(caminho: str) -> List[Pedido]:
+    def _carregar_planilha(self, caminho: str) -> List[Pedido]:
         """
         Carrega os dados da planilha SOMENTE do Google Sheets.
         """

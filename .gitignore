@@ -25,3 +25,6 @@ temp/
 
 # Configurações locais
 config.json
+
+# Arquivos de mapeamento
+pedidos/Mapeamento de Racks - Cabos.xlsx

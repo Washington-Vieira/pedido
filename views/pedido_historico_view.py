@@ -330,7 +330,7 @@ class PedidoHistoricoView:
                     df_pedidos = df_pedidos[df_pedidos['Cliente'] == dashboard_cliente]
             # Aplicar filtros normais
             elif status_filtro != "Todos":
-                df_pedidos = df_pedidos[df_pedidos["Status"] == status_filtro]
+                df_pedidos = self.controller.buscar_pedidos(status=status_filtro if status_filtro != "Todos" else None)
             
             # Aplicar filtro de data se selecionado
             if not df_pedidos.empty and (data_inicial or data_final):

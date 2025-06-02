@@ -323,7 +323,8 @@ class PedidoHistoricoView:
                 return
 
             # Mostrar total de pedidos
-            st.write(f"Total: {len(df_pedidos)} pedidos encontrados")
+            # st.write(f"Total: {len(df_pedidos)} pedidos encontrados")
+            # Removido para não mostrar debug ao usuário
 
             # Formatar DataFrame para exibição
             df_display = df_pedidos[[

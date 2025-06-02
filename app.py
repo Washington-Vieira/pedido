@@ -7,6 +7,7 @@ from views.pedido_historico_view import PedidoHistoricoView
 from views.pedido_form_view import PedidoFormView
 from views.configuracoes_view import ConfiguracoesView
 from pathlib import Path
+from views.pedido_dashboard_gerencial import mostrar_dashboard_gerencial
 
 # Carregar variáveis de ambiente
 load_dotenv()
@@ -163,6 +164,7 @@ def main():
         if "Novo Pedido" in st.session_state.menu_atual:
             pedido_view.mostrar_interface()
         elif "Histórico" in st.session_state.menu_atual:
+            mostrar_dashboard_gerencial(pedido_controller)
             historico_view.mostrar_interface()
         else:
             configuracoes_view.mostrar_interface()

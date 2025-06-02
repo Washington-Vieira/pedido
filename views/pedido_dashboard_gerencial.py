@@ -19,6 +19,13 @@ def mostrar_dashboard_gerencial(controller):
     total_pendente = len(df_pedidos[df_pedidos['Status'] == 'Pendente'])
     total_urgente_pendente = len(df_pedidos[(df_pedidos['Status'] == 'Pendente') & (df_pedidos['Urgente'].str.strip().str.lower() == 'sim')])
 
+    # Debug: mostrar os valores no topo
+    st.write('DEBUG - Total pedidos:', total_pedidos)
+    st.write('DEBUG - Total concluído:', total_concluido)
+    st.write('DEBUG - Total em processamento:', total_processando)
+    st.write('DEBUG - Total pendente:', total_pendente)
+    st.write('DEBUG - Total urgente pendente:', total_urgente_pendente)
+
     st.markdown(f"""
     <style>
     .dashboard-cards {{display: flex; gap: 18px; margin-bottom: 24px; flex-wrap: wrap;}}

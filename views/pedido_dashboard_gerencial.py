@@ -9,7 +9,6 @@ def mostrar_dashboard_gerencial(controller):
     # Buscar todos os pedidos
     df_pedidos = controller.buscar_pedidos(status=None)
     if df_pedidos.empty:
-        st.info("Nenhum pedido encontrado para exibir o dashboard gerencial.")
         return
 
     # --- TOTAIS GERAIS ---

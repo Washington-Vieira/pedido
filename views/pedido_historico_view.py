@@ -299,10 +299,10 @@ class PedidoHistoricoView:
             
             st.markdown("### 📋 Histórico de Pedidos")
             
-            # Filtro de Status (agora controlado pelo dashboard também)
+            # Filtro de Status
             status_filtro = st.selectbox(
                 "Status do Pedido",
-                ["Todos", "Pendente", "Concluído", "Em Processamento"],
+                ["Todos", "Pendente", "Em Processamento", "Concluído"],
                 key="status_filter"
             )
             
@@ -313,29 +313,12 @@ class PedidoHistoricoView:
             with col_data2:
                 data_final = st.date_input("Data final", value=None, key="filtro_data_final")
             
-            # Aplicar filtros do dashboard e manter o DataFrame filtrado
+            # Aplicar filtros
             df_filtrado = df_pedidos.copy()
             filtro_aplicado = False
             
-            if 'dashboard_filter' in st.session_state:
-                dashboard_status = st.session_state.dashboard_filter.get('status')
-                dashboard_cliente = st.session_state.dashboard_filter.get('cliente')
-                
-                if dashboard_status == 'urgente':
-                    df_filtrado = df_filtrado[
-                        (df_filtrado['Status'] == 'Pendente') & 
-                        (df_filtrado['Urgente'].str.strip().str.lower() == 'sim')
-                    ]
-                    filtro_aplicado = True
-                elif dashboard_status and dashboard_status != 'todos':
-                    df_filtrado = df_filtrado[df_filtrado['Status'] == dashboard_status]
-                    filtro_aplicado = True
-                
-                if dashboard_cliente:
-                    df_filtrado = df_filtrado[df_filtrado['Cliente'] == dashboard_cliente]
-                    filtro_aplicado = True
-            # Aplicar filtros normais se não houver filtro do dashboard
-            elif status_filtro != "Todos":
+            # Aplicar filtro de status
+            if status_filtro != "Todos":
                 df_filtrado = df_filtrado[df_filtrado["Status"] == status_filtro]
                 filtro_aplicado = True
             
@@ -494,18 +477,17 @@ class PedidoHistoricoView:
                             st.success("Status atualizado com sucesso!")
                             st.rerun()
                         except Exception as e:
-                            pass  # Não exibe nenhuma mensagem de erro para o usuário
+                            st.error(f"Erro ao atualizar status: {str(e)}")
 
                 # Observações
                 if detalhes['info'].get('Observacoes'):
                     st.markdown("---")
                     st.markdown("#### Observações")
                     st.write(detalhes['info']['Observacoes'])
+
         except Exception as e:
-            if "Quota exceeded" in str(e) or "[429]" in str(e):
-                st.warning("Por favor, recarregue a página e aguarde um minuto antes de tentar novamente.")
-            else:
-                st.warning("Não foi possível carregar os pedidos. Por favor, tente novamente em alguns instantes.")
+            st.error(f"Erro ao carregar pedidos: {str(e)}")
+            print(f"Erro detalhado: {str(e)}")  # Para debug 
 
     def formatar_pedido_para_impressao(self, pedido: dict) -> str:
         """Formata os detalhes do pedido para impressão"""

@@ -301,12 +301,13 @@ class PedidoController:
             df_pedidos.loc[idx, 'Ultima_Atualizacao'] = ultima_atualizacao
             df_pedidos.loc[idx, 'Responsavel_Atualizacao'] = responsavel
 
-            # Se for urgente e concluído, atualizar campo Urgente
+            # Se for urgente e concluído, atualizar campo Urgente (robusto)
             urgente_original = str(df_pedidos.loc[idx, 'Urgente']).strip().lower()
             urgente_foi_concluido = False
-            if novo_status == 'Concluído' and urgente_original == 'sim':
+            if novo_status == 'Concluído' and 'sim' in urgente_original:
                 df_pedidos.loc[idx, 'Urgente'] = 'Concluido Urgente'
                 urgente_foi_concluido = True
+                print(f"[DEBUG] Pedido {numero_pedido} marcado como Concluido Urgente!")
 
             # Fazer backup antes de salvar localmente
             self._fazer_backup()

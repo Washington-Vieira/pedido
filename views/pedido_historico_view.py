@@ -778,7 +778,7 @@ class PedidoHistoricoView:
             if "Quota exceeded" in str(e) or "[429]" in str(e):
                 st.warning("Por favor, recarregue a página e aguarde um minuto antes de tentar novamente.")
             else:
-                st.warning("Não foi possível carregar os pedidos. Por favor, tente novamente em alguns instantes.")
+                st.error(f"Erro ao carregar pedidos: {str(e)}")
 
     def formatar_pedido_para_impressao(self, pedido: dict) -> str:
         """Formata os detalhes do pedido para impressão"""

@@ -164,6 +164,7 @@ def main():
         if "Novo Pedido" in st.session_state.menu_atual:
             pedido_view.mostrar_interface()
         elif "Histórico" in st.session_state.menu_atual:
+            st.markdown("## 📊 Dashboard Gerencial")
             mostrar_dashboard_gerencial(pedido_controller)
             historico_view.mostrar_interface()
         else:
